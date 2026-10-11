@@ -182,6 +182,7 @@ textarea.inp{resize:vertical;line-height:1.6}
 details summary{cursor:pointer;font-size:13px;color:var(--mute);min-height:36px;display:flex;align-items:center}
 
 .toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:20px;font-size:14px;z-index:30;max-width:calc(100% - 40px)}
+.foot{display:flex;justify-content:center;padding-top:12px;opacity:.9}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 </style>
 </head>
@@ -234,7 +235,7 @@ const FIREBASE_CONFIG = {
 */
 
 (function(){
-const VERSION = 'v4.4';
+const VERSION = 'v4.7';
 const FB_VER = '10.12.2';
 const $ = s => document.querySelector(s);
 const toTop = () => { const sc=document.getElementById('scroller'); if(sc) sc.scrollTop=0; };
@@ -510,7 +511,7 @@ function home(){ S.stack=[]; S.view='home'; renderView(); toTop(); }
 
 /* ---------- gate screens ---------- */
 function viewSetup(){
-  return `<div class="top"><div class="logo">${LOGO(30)}<span>캐치캐치</span></div></div>
+  return `<div class="top"><h1 class="logo" style="margin:0">${LOGO(34)}<span class="sr">캐치캐치</span></h1></div>
   <div><div class="eyebrow">처음 한 번만</div><h1 class="headline">구글 로그인 연결하기</h1></div>
   <div class="card">
     <h2>Firebase에서 할 일</h2>
@@ -537,7 +538,6 @@ function viewSetup(){
 }
 function viewLogin(){
   return `<div class="hero">${LOGO(84)}
-    <div class="eyebrow">캐치캐치</div>
     <h1>좋은 정보는 캡처하고,<br>정리는 맡기세요</h1>
     <p>캡처를 올리면 AI가 글자를 읽고 요약해서 폴더에 넣어줘요. 구글로 로그인하면 iPad와 휴대폰 어디서든 같은 보관함을 볼 수 있어요.</p>
     ${S.loginErr?`<p class="note err">${esc(S.loginErr)}</p>`:''}
@@ -580,7 +580,7 @@ function viewHome(){
   if(!n) head='캡처를 올리면<br>AI가 읽고 정리해둘게요';
   else if(today) head=`오늘 모은 캡처 <b>${today}개</b>,<br>모두 ${n}개를 정리해뒀어요`;
   else head=`캡처 <b>${n}개</b>를<br>폴더 ${S.folders.length}개에 정리해뒀어요`;
-  let h=`<div class="top"><div class="logo">${LOGO(30)}<span>캐치캐치</span></div><button class="iconbtn" data-act="go-settings" aria-label="설정">${ic(I.gear,20)}${hasAI()?'':'<span class="ping"></span>'}</button></div>
+  let h=`<div class="top"><h1 class="logo" style="margin:0">${LOGO(34)}<span class="sr">캐치캐치</span></h1><button class="iconbtn" data-act="go-settings" aria-label="설정">${ic(I.gear,20)}${hasAI()?'':'<span class="ping"></span>'}</button></div>
   <div><div class="eyebrow">${esc(date)}</div><h1 class="headline">${head}</h1></div>`;
   h+=dataErrHTML();
   if(QUEUE.length){ const run=QUEUE.find(j=>j.status==='running'); h+=`<div class="pill" role="status">${SPIN(22)}<span>AI가 ${QUEUE.length}개를 정리하고 있어요${run&&run.statusMsg?' · '+esc(run.statusMsg):''}</span></div>`; }
@@ -594,7 +594,7 @@ function viewHome(){
   }
   h+=`<section class="section"><div class="sec-head"><h2>폴더</h2></div><div class="folders">${folderCards()}</div></section>`;
   if(n) h+=`<section class="section"><div class="sec-head"><h2>최근 캡처</h2></div><div class="list">${S.caps.slice(0,30).map(c=>rowHTML(c)).join('')}</div></section>`;
-  return h;
+  return h+footer();
 }
 function viewFolder(){
   const id=S.folderId, f=folderOf(id); if(id!=='_none' && !f){ S.view='home'; return viewHome(); }
@@ -710,6 +710,7 @@ function aiCard(){
     ${S.test && S.test!=='run' ? `<p class="note ${S.test.ok?'ok':'err'}">${esc(S.test.msg)}</p>` : ''}
   </form>`;
 }
+function footer(){ return `<div class="foot">${LOGO(18)}</div>`; }
 function viewSettings(){
   const u=S.user;
   return `<div class="top"><button class="iconbtn bare" data-act="back" aria-label="뒤로">${ic(I.back)}</button></div>
@@ -730,7 +731,7 @@ function viewSettings(){
     ${S.busy?`<p class="note">${esc(S.busy)}</p>`:''}
     <div class="actions"><button class="btn sm outline" data-act="backup" ${S.busy?'disabled':''}>${ic(I.down,18)}백업 파일 저장</button><button class="btn sm outline" data-act="restore" ${S.busy?'disabled':''}>${ic(I.up,18)}백업 불러오기</button></div>
   </div>
-  <p class="hint" style="text-align:center">캐치캐치 ${VERSION} · 캡처의 자음 ㅋㅊ에서, 좋은 정보를 캐치한다는 뜻</p>`;
+  ${footer()}`;
 }
 function renderView(){
   let html;
