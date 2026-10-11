@@ -205,7 +205,14 @@ details summary{cursor:pointer;font-size:13px;color:var(--mute);min-height:36px;
    아래에 붙여넣어 두면, 어느 기기에서 열어도 바로 로그인 화면이 떠요.
    비워두면 앱 첫 화면에서 붙여넣을 수 있어요.
    ============================================================ */
-const FIREBASE_CONFIG = null;
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCR25BvUWr8DZSFhMKeInkeJthzjD5WKmg",
+  authDomain: "rubidirector-catchcatch.firebaseapp.com",
+  projectId: "rubidirector-catchcatch",
+  storageBucket: "rubidirector-catchcatch.firebasestorage.app",
+  messagingSenderId: "756524983930",
+  appId: "1:756524983930:web:9b7ae1206b84f84375fdc3"
+};
 /* 예)
 const FIREBASE_CONFIG = {
   apiKey: "AIza...",
@@ -218,7 +225,7 @@ const FIREBASE_CONFIG = {
 */
 
 (function(){
-const VERSION = 'v3.0';
+const VERSION = 'v3.2';
 const FB_VER = '10.12.2';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -246,12 +253,18 @@ const SPIN = n => `<svg width="${n}" height="${n}" viewBox="0 0 40 40" aria-hidd
 const RULES = `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{uid}/{document=**} {
+    // 캐치캐치: 각자 자기 캡처만 읽고 쓰기
+    match /catchcatch/{uid}/{document=**} {
       allow read, write: if request.auth != null
                          && request.auth.uid == uid;
     }
   }
 }`;
+const RULE_BLOCK = `    // 캐치캐치: 각자 자기 캡처만 읽고 쓰기
+    match /catchcatch/{uid}/{document=**} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == uid;
+    }`;
 
 /* phase: setup (Firebase 설정 필요) → auth (확인 중) → login (로그인 필요) → loading (불러오는 중) → ready */
 const S = { phase:'auth', user:null, folders:[], caps:[], view:'home', stack:[], folderId:null, capId:null,
@@ -283,8 +296,8 @@ async function initFirebase(cfg){
   try{ await authM.getRedirectResult(auth); }catch(e){ S.loginErr=authErr(e); }
   authM.onAuthStateChanged(auth, onUser);
 }
-const ref = (name,id) => FB.F.doc(FB.db,'users',S.user.uid,name,id);
-const col = name => FB.F.collection(FB.db,'users',S.user.uid,name);
+const ref = (name,id) => FB.F.doc(FB.db,'catchcatch',S.user.uid,name,id);
+const col = name => FB.F.collection(FB.db,'catchcatch',S.user.uid,name);
 function write(p){ return p.catch(e=>{ toast(fsErr(e)); throw e; }); }
 function fsErr(e){
   const c=e && e.code || '';
@@ -457,10 +470,14 @@ function viewSetup(){
       <li><b>프로젝트 설정 → 내 앱</b>에서 웹 앱(&lt;/&gt;)을 추가하고, 나오는 <b>firebaseConfig</b> 코드를 복사해요.</li>
       <li><b>Authentication → 로그인 방법</b>에서 <b>Google</b>을 사용 설정해요.</li>
       <li><b>Authentication → 설정 → 승인된 도메인</b>에 <b>${esc(location.hostname)}</b> 을 추가해요.</li>
-      <li><b>Firestore Database → 데이터베이스 만들기</b>를 누르고, <b>규칙</b> 탭에 아래 규칙을 붙여넣어 <b>게시</b>해요.</li>
+      <li><b>Firestore Database</b>에서 데이터베이스를 만들고(이미 있으면 그대로 써요), <b>규칙</b> 탭에 아래 규칙을 넣어 <b>게시</b>해요.</li>
     </ol>
+    <p><b>규칙이 비어 있거나 처음 만든 경우</b>: 규칙 전체를 지우고 아래로 바꿔요.</p>
     <pre class="code">${esc(RULES)}</pre>
-    <button class="btn sm outline" data-act="copy-rules" style="align-self:flex-start">${ic(I.copy,18)}규칙 복사</button>
+    <button class="btn sm outline" data-act="copy-rules" style="align-self:flex-start">${ic(I.copy,18)}전체 규칙 복사</button>
+    <p><b>같은 프로젝트의 다른 앱이 이미 Firestore를 쓰는 경우</b>: 기존 규칙은 지우지 말고, <code>match /databases/{database}/documents {</code> 바로 아랫줄에 이 부분만 끼워 넣어요.</p>
+    <pre class="code">${esc(RULE_BLOCK)}</pre>
+    <button class="btn sm outline" data-act="copy-block" style="align-self:flex-start">${ic(I.copy,18)}추가할 부분만 복사</button>
   </div>
   <form class="card" data-form="cfg">
     <h2>firebaseConfig 붙여넣기</h2>
@@ -503,7 +520,7 @@ function folderCards(){
   return h;
 }
 function dataErrHTML(){
-  if(S.dataErr==='perm') return `<div class="card"><h2>저장소에 접근할 수 없어요</h2><p>Firestore 보안 규칙이 아직 설정되지 않았어요. Firebase 콘솔 → Firestore Database → 규칙 탭에 아래 규칙을 붙여넣고 게시한 뒤 새로고침해 주세요.</p><pre class="code">${esc(RULES)}</pre><button class="btn sm outline" data-act="copy-rules" style="align-self:flex-start">${ic(I.copy,18)}규칙 복사</button></div>`;
+  if(S.dataErr==='perm') return `<div class="card"><h2>저장소에 접근할 수 없어요</h2><p>Firestore 보안 규칙에 캐치캐치 부분이 없어요. Firebase 콘솔 → Firestore Database → 규칙 탭에서 <code>match /databases/{database}/documents {</code> 바로 아랫줄에 아래 부분을 넣고 게시한 뒤 새로고침해 주세요. 다른 앱의 기존 규칙은 지우지 마세요.</p><pre class="code">${esc(RULE_BLOCK)}</pre><button class="btn sm outline" data-act="copy-block" style="align-self:flex-start">${ic(I.copy,18)}추가할 부분 복사</button></div>`;
   if(S.dataErr==='nodb') return `<div class="card"><h2>저장소가 아직 없어요</h2><p>Firebase 콘솔 → Firestore Database에서 ‘데이터베이스 만들기’를 누른 뒤 새로고침해 주세요.</p></div>`;
   if(S.dataErr) return `<p class="note err">보관함을 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요.</p>`;
   return '';
@@ -882,11 +899,12 @@ async function restore(file){
 document.addEventListener('click', async e=>{
   const el=e.target.closest('[data-act]'); if(!el) return;
   const act=el.dataset.act, id=el.dataset.id;
-  if(S.phase!=='ready' && !['login','reset-cfg','copy-rules'].includes(act)) return;
+  if(S.phase!=='ready' && !['login','reset-cfg','copy-rules','copy-block'].includes(act)) return;
   switch(act){
     case 'login': login(); break;
     case 'reset-cfg': LS.del('cc_fbcfg'); location.reload(); break;
     case 'copy-rules': copyText(RULES); break;
+    case 'copy-block': copyText(RULE_BLOCK); break;
     case 'go-home': if(S.add) closeAdd(); home(); break;
     case 'go-search': if(S.add) closeAdd(); if(S.view!=='search') go('search'); setTimeout(()=>$('#q')?.focus(),0); break;
     case 'go-settings': S.keyDraft=null; S.test=null; if(S.view!=='settings') go('settings'); break;
