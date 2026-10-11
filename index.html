@@ -22,7 +22,7 @@
 /* Layout: one phone-width column (max 520px), fixed bottom bar with a pink "sphere" add button, bottom sheet for adding */
 :root{
   --bg:#EBEBE9; --surface:#F7F7F5; --sunk:#DEDEDB; --ink:#2A2A2C; --mute:#5E5E62; --line:#D3D3D0;
-  --pink:#EDBFC6; --on-pink:#2A2A2C; --mark:#F2CCD2; --danger:#A3303F; --ok:#2F6B4A; --scrim:rgba(30,30,32,.38);
+  --pink:#EDBFC6; --pink-strong:#D98C9C; --on-pink:#2A2A2C; --mark:#F2CCD2; --danger:#A3303F; --ok:#2F6B4A; --scrim:rgba(30,30,32,.38);
   --sans:'IBM Plex Sans KR',system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
   --tabh:calc(70px + env(safe-area-inset-bottom,0px));
@@ -30,7 +30,7 @@
 }
 @media (prefers-color-scheme: dark){:root{
   --bg:#1D1D1F; --surface:#29292C; --sunk:#333336; --ink:#ECECEA; --mute:#A4A4A8; --line:#3B3B3F;
-  --pink:#E6B1BA; --on-pink:#1D1D1F; --mark:#6B4148; --danger:#F08A97; --ok:#8FD1AC; --scrim:rgba(0,0,0,.55); color-scheme:dark}}
+  --pink:#E6B1BA; --pink-strong:#E6B1BA; --on-pink:#1D1D1F; --mark:#6B4148; --danger:#F08A97; --ok:#8FD1AC; --scrim:rgba(0,0,0,.55); color-scheme:dark}}
 
 html,body{background:var(--bg);margin:0;height:100%;overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulation}
 body{position:fixed;inset:0;width:100%}
@@ -176,7 +176,8 @@ textarea.inp{resize:vertical;line-height:1.6}
 .thinking p{margin:0;font-size:14px;color:var(--mute)}
 .spin{animation:spin 2.4s linear infinite;transform-origin:50% 50%}
 @keyframes spin{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion: reduce){.spin{animation:none}}
+.spinner{flex:none;display:block;animation:spin .9s linear infinite;transform-origin:50% 50%}
+@media (prefers-reduced-motion: reduce){.spinner{animation-duration:2.4s}}
 .answer{background:var(--surface);border-radius:20px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
 .answer p{margin:0;font-size:14px;line-height:1.7;white-space:pre-wrap}
 details summary{cursor:pointer;font-size:13px;color:var(--mute);min-height:36px;display:flex;align-items:center}
@@ -260,7 +261,7 @@ const I = {
 /* 캐치캐치 logo: tall, narrow ㅋㅊ joined along one top line, even gothic strokes in the app's pink */
 const MARK_D='M4 14H56M24 14V66M4 38H24M42 2V14M42 14L30 66M42 14L55 66';
 const LOGO = (h=30) => `<svg width="${Math.round(h*58/68)}" height="${h}" viewBox="1 1 58 68" style="display:block;flex:0 0 auto" fill="none" stroke="var(--pink)" stroke-width="5.5" stroke-linecap="butt" stroke-linejoin="miter" role="img" aria-label="캐치캐치 로고"><path d="${MARK_D}"/></svg>`;
-const SPIN = n => `<svg width="${n}" height="${n}" viewBox="0 0 40 40" aria-hidden="true"><g class="spin"><path d="M20 3 A17 17 0 0 1 20 37" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M20 10 A10 10 0 0 1 20 30" fill="none" stroke="currentColor" stroke-width="1.2"/></g><circle cx="17" cy="20" r="7" style="fill:var(--pink)"/></svg>`;
+const SPIN = n => `<svg class="spinner" width="${n}" height="${n}" viewBox="0 0 50 50" role="img" aria-label="불러오는 중"><circle cx="25" cy="25" r="20" fill="none" stroke="var(--line)" stroke-width="5"/><circle cx="25" cy="25" r="20" fill="none" stroke="var(--pink-strong)" stroke-width="5" stroke-linecap="round" stroke-dasharray="38 126"/></svg>`;
 const RULES = `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -749,7 +750,7 @@ function renderView(){
 }
 
 /* ---------- 바로 정리하기 (background queue) ---------- */
-const QUICK = () => LS.get('cc_quick')!=='0';
+const QUICK = () => false;
 const QUEUE=[]; let QRUN=false;
 function enqueue(job){ job.id=newId(); job.status='waiting'; QUEUE.push(job); renderView(); processQueue(); }
 async function processQueue(){
@@ -891,7 +892,6 @@ function sheetHTML(){
   <div class="shead"><h2 id="sh-t">${A.mode==='link'?'링크 저장':'새 캡처'}</h2><button class="iconbtn bare" data-act="close-add" aria-label="닫기">${ic(I.close)}</button></div>`;
   if(A.phase==='pick'){
     h+=`<div class="seg" role="tablist"><button role="tab" aria-selected="${A.mode==='capture'}" data-act="mode" data-id="capture">캡처 이미지</button><button role="tab" aria-selected="${A.mode==='link'}" data-act="mode" data-id="link">링크</button></div>`;
-    if(hasAI()) h+=`<div class="section" style="gap:8px"><span class="flabel">저장 방식</span><div class="seg" role="tablist" aria-label="저장 방식"><button role="tab" aria-selected="${QUICK()}" data-act="quick" data-id="1">${ic(I.spark,16)}바로 정리하기</button><button role="tab" aria-selected="${!QUICK()}" data-act="quick" data-id="0">확인하고 저장</button></div><p class="hint">${QUICK()?'AI가 읽고 알맞은 폴더에 바로 저장해요. 기다리지 않아도 되고, 여러 장을 한 번에 골라도 돼요.':'AI가 정리한 내용을 보고 고친 뒤 저장해요.'}</p></div>`;
     if(A.err) h+=`<p class="note err">${esc(A.err)}</p>`;
     if(A.mode==='capture'){
       h+=`<div class="drop" id="drop">${LOGO(56)}<span>캡처 이미지를 고르면<br>${hasAI()?'AI가 글자를 읽고 요약해요':'제목과 요약을 붙여 저장해요'}</span><button class="btn pink" data-act="pick">${ic(I.image,20)}이미지 고르기</button><span class="hint">컴퓨터에서는 붙여넣기(Ctrl+V)나 끌어다 놓기도 돼요</span></div>`;
@@ -903,7 +903,7 @@ function sheetHTML(){
     return h+`</div>`;
   }
   if(A.phase==='thinking'){
-    return h+`<div class="thinking">${A.preview?`<span class="thumb" style="width:76px;height:96px;border-radius:16px;flex:none"><img src="${A.preview}" alt=""></span>`:''}${SPIN(56)}<p><b style="color:var(--ink)">${!A.img&&A.mode==='capture'?'이미지를 준비하고 있어요':`AI가 ${A.mode==='capture'?'캡처를 읽고':'내용을 정리하고'} 있어요`}</b><br>${esc(A.status||'보통 5~20초 걸려요')}</p><div class="actions" style="justify-content:center"><button class="btn sm" data-act="to-quick">${ic(I.spark,18)}바로 정리로 맡기기</button>${A.ctl?`<button class="btn sm outline" data-act="stop">${ic(I.stop,18)}멈추기</button>`:''}</div><p class="hint">맡기면 창을 닫아도 AI가 정리해서 알맞은 폴더에 저장해요.</p></div></div>`;
+    return h+`<div class="thinking">${A.preview?`<span class="thumb" style="width:76px;height:96px;border-radius:16px;flex:none"><img src="${A.preview}" alt=""></span>`:''}${SPIN(48)}<p><b style="color:var(--ink)">${!A.img&&A.mode==='capture'?'이미지를 준비하고 있어요':`AI가 ${A.mode==='capture'?'캡처를 읽고':'내용을 정리하고'} 있어요`}</b><br>${esc(A.status||'보통 5~20초 걸려요')}</p><div class="actions" style="justify-content:center">${A.ctl?`<button class="btn sm outline" data-act="stop">${ic(I.stop,18)}멈추기</button>`:''}</div></div></div>`;
   }
   if(A.phase==='saving') return h+`<div class="thinking">${SPIN(56)}<p>저장하는 중이에요</p></div></div>`;
   const d=A.draft;
