@@ -123,7 +123,7 @@ mark{background:var(--mark);color:var(--ink);border-radius:4px;padding:0 2px}
 .inp{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 14px;font-size:16px;min-height:46px}
 textarea.inp{resize:vertical;line-height:1.6}
 .hint{font-size:12px;color:var(--mute);margin:0}
-.note{font-size:13px;padding:12px 14px;border-radius:14px;background:var(--sunk);margin:0}
+.note{font-size:13px;padding:12px 14px;border-radius:14px;background:var(--sunk);margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
 .note.err{color:var(--danger)}
 .card{background:var(--surface);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:14px}
 .card h2{margin:0;font-size:16px;font-weight:600}
@@ -254,14 +254,28 @@ async function askClaude(text, file, signal){
       headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({ model:AI.model(), max_tokens:4096, messages:[{role:'user', content}] }) });
   }catch(e){ throw {code: e && e.name==='AbortError' ? 'cancelled' : 'network'}; }
-  if(!r.ok){ const s=r.status; throw {code: s===401||s===403 ? 'bad_key' : s===429 ? 'rate_limited' : (s===529||s>=500) ? 'overloaded' : s===404 ? 'bad_model' : s===400 ? 'bad_request' : 'http'}; }
+  if(!r.ok){
+    const s=r.status; let detail='';
+    try{ const ej=await r.json(); detail=String(ej?.error?.message||''); }catch(e){}
+    const code = /credit balance|billing|purchase credits/i.test(detail) ? 'no_credit'
+      : s===401 ? 'bad_key' : s===403 ? 'forbidden' : s===429 ? 'rate_limited' : (s===529||s>=500) ? 'overloaded'
+      : (s===404 || /model/i.test(detail)) ? 'bad_model' : s===413 ? 'too_big' : s===400 ? 'bad_request' : 'http';
+    throw {code, detail: detail ? `${s} · ${detail.slice(0,160)}` : String(s)};
+  }
   const j=await r.json(); const t=(j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
   const a=t.indexOf('{'), b=t.lastIndexOf('}'); if(a<0||b<a) throw {code:'invalid_json'};
   try{ return JSON.parse(t.slice(a,b+1)); }catch(e){ throw {code:'invalid_json'}; }
 }
-function errCopy(code){
+function errCopy(code, detail){
+  const base = errBase(code);
+  return detail && !['no_key','cancelled'].includes(code) ? `${base}\n오류 내용: ${detail}` : base;
+}
+function errBase(code){
   switch(code){
     case 'no_key': return '설정에서 Claude API 키를 넣으면 AI가 자동으로 정리해요. 지금은 직접 적을 수 있어요.';
+    case 'no_credit': return 'API 크레딧이 부족해요. Anthropic 콘솔의 Billing에서 크레딧을 충전한 뒤 다시 분석을 눌러주세요.';
+    case 'forbidden': return '이 API 키로는 요청할 권한이 없어요. 콘솔에서 키와 워크스페이스 설정을 확인해 주세요.';
+    case 'too_big': return '이미지가 너무 커요. 더 작은 캡처로 시도해 주세요.';
     case 'bad_key': return 'API 키가 맞지 않아요. 설정에서 키를 확인해 주세요.';
     case 'bad_model': return '선택한 AI 모델을 쓸 수 없어요. 설정에서 다른 모델을 골라주세요.';
     case 'rate_limited': return '요청이 많아요. 잠시 후 다시 시도해 주세요.';
@@ -456,7 +470,8 @@ function viewSettings(){
     <div class="field"><label for="s-model">모델</label><select id="s-model" class="inp" data-change="model">${MODELS.map(([v,l])=>`<option value="${v}" ${v===m?'selected':''}>${esc(l)}</option>`).join('')}</select></div>
     <p>키는 이 기기의 브라우저에만 저장돼요. 다른 사람과 같이 쓰는 기기에서는 넣지 마세요.</p>
     <div class="actions">${AI.key()?`<button type="button" class="btn sm outline" data-act="key-clear">키 지우기</button>`:''}<button class="btn sm">${AI.key()?'키 바꾸기':'키 저장'}</button></div>
-    <p>${hasAI()?'AI 정리를 쓸 수 있어요.':'키가 없으면 제목과 요약을 직접 적어서 저장해요.'}</p>
+    ${AI.key()?`<button type="button" class="btn sm outline" data-act="key-test" ${S.test==='run'?'disabled':''}>${S.test==='run'?'확인하는 중…':'연결 테스트'}</button>`:''}
+    ${S.test && S.test!=='run' ? `<p class="note ${S.test.ok?'':'err'}" style="white-space:pre-wrap">${esc(S.test.msg)}</p>` : `<p>${hasAI()?'AI 정리를 쓸 수 있어요.':'키가 없으면 제목과 요약을 직접 적어서 저장해요.'}</p>`}
   </form>
   <div class="card">
     <h2>백업</h2>
@@ -523,7 +538,7 @@ async function analyze(){
   }catch(e){
     if(S.add!==A) return;
     if(e && e.code==='cancelled'){ A.note='분석을 멈췄어요. 직접 적거나 다시 분석할 수 있어요.'; toReview({}); return; }
-    A.err=errCopy(e && e.code); toReview({});
+    A.err=errCopy(e && e.code, e && e.detail); toReview({});
   }
 }
 function toReview(raw){
@@ -641,7 +656,7 @@ async function askAI(){
     S.ask={q, phase:'done', answer:String(r?.answer||'답을 찾지 못했어요.'), ids:Array.isArray(r?.ids)?r.ids.map(String).slice(0,8):[]};
   }catch(e){
     if(S.ask?.ctl!==ctl) return;
-    S.ask = e && e.code==='cancelled' ? null : {q, phase:'error', error:errCopy(e && e.code)};
+    S.ask = e && e.code==='cancelled' ? null : {q, phase:'error', error:errCopy(e && e.code, e && e.detail)};
   }
   renderView();
 }
@@ -716,7 +731,11 @@ document.addEventListener('click', async e=>{
       catch(err){ const p=document.querySelector('.raw'); if(p){ const r=document.createRange(); r.selectNodeContents(p); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast('선택된 글자를 복사하세요'); } } break; }
     case 'ask': askAI(); break;
     case 'ask-stop': S.ask?.ctl?.abort(); break;
-    case 'key-clear': LS.del('cc_api_key'); S.keyDraft=''; renderView(); toast('API 키를 지웠어요'); break;
+    case 'key-clear': LS.del('cc_api_key'); S.keyDraft=''; S.test=null; renderView(); toast('API 키를 지웠어요'); break;
+    case 'key-test': S.test='run'; renderView();
+      try{ await askClaude('연결 확인이야. {"ok":true} 만 그대로 답해.', null); S.test={ok:true, msg:`연결됐어요. ${AI.model()} 모델로 분석할 수 있어요.`}; }
+      catch(err){ S.test={ok:false, msg:errCopy(err && err.code, err && err.detail)}; }
+      renderView(); break;
     case 'backup': backup(); break;
     case 'restore': $('#backup-file').click(); break;
     case 'wipe': S.confirmWipe=true; renderView(); break;
