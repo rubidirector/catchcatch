@@ -13,13 +13,14 @@ Firebase 콘솔(https://console.firebase.google.com)에서 프로젝트를 열�
 1. **프로젝트 설정(톱니) → 일반 → 내 앱**에서 웹 앱(`</>`)을 추가합니다. 이름은 `캐치캐치`. 나오는 `firebaseConfig` 코드를 복사해 둡니다.
 2. **Authentication → 시작하기 → 로그인 방법**에서 **Google**을 사용 설정합니다.
 3. **Authentication → 설정 → 승인된 도메인**에 `<아이디>.github.io`를 추가합니다.
-4. **Firestore Database → 데이터베이스 만들기** (위치는 `asia-northeast3 (서울)` 추천). 만든 뒤 **규칙** 탭에 아래를 붙여넣고 **게시**합니다.
+4. **Firestore Database → 데이터베이스 만들기** (위치는 `asia-northeast3 (서울)` 추천, 이미 있으면 그대로). **규칙** 탭에 아래를 넣고 **게시**합니다.
+   - 같은 프로젝트의 다른 앱이 이미 규칙을 쓰고 있다면, 기존 규칙은 지우지 말고 `match /catchcatch/...` 블록만 `match /databases/{database}/documents {` 아래에 추가하세요.
 
 ```
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{uid}/{document=**} {
+    match /catchcatch/{uid}/{document=**} {
       allow read, write: if request.auth != null
                          && request.auth.uid == uid;
     }
@@ -31,14 +32,18 @@ service cloud.firestore {
 
 **다른 기기에서도 설정 없이 쓰려면** `index.html`의 `const FIREBASE_CONFIG = null;` 을 복사한 설정 객체로 바꿔 올리세요. Firebase 웹 설정값은 공개돼도 괜찮은 값이고, 데이터는 위 보안 규칙으로 본인만 읽고 쓸 수 있어요.
 
-## 3. AI 정리 켜기 (Gemini, 무료)
-1. https://aistudio.google.com/app/apikey 에서 **Create API key**.
-2. 앱 **설정 → AI 정리 · Gemini**에 붙여넣고 **저장 → 연결 테스트**.
+## 3. 각자 내 AI 연결하기
+캡처 분석과 AI 질문은 **로그인한 사람마다 자기 AI 키**로 해요. 키는 그 사람 계정(`catchcatch/<uid>/meta/settings`)에만 저장되고, 다른 사람은 볼 수도 쓸 수도 없어요.
 
-키는 내 계정에 함께 저장돼서 다른 기기에서 다시 넣지 않아도 돼요. 무료 키로 보낸 내용은 구글이 서비스 개선에 쓸 수 있어요.
+앱 **설정 → 내 AI 연결**에서 하나를 골라요.
+- **Gemini (무료)**: https://aistudio.google.com/app/apikey 에서 키 만들기. 무료 키로 보낸 내용은 구글이 서비스 개선에 쓸 수 있어요.
+- **ChatGPT (유료)**: https://platform.openai.com/api-keys — OpenAI API 크레딧 충전이 필요해요 (ChatGPT 구독과 별개).
+- **Claude (유료)**: https://platform.claude.com/settings/keys — 워크스페이스 키로 만들고, API 크레딧 충전이 필요해요 (Claude 구독과 별개).
+
+키가 없어도 직접 입력으로 저장·검색은 됩니다.
 
 ## 데이터 / 비용
-- 캡처 목록과 이미지는 Firestore의 `users/<내 uid>/` 아래에 저장됩니다. 이미지는 저장할 때 용량을 줄여(최대 약 650KB) 보관해요.
+- 캡처 목록과 이미지는 Firestore의 `catchcatch/<내 uid>/` 아래에 저장됩니다. 이미지는 저장할 때 용량을 줄여(최대 약 650KB) 보관해요.
 - Firebase 무료(Spark) 요금제 안에서 동작합니다. 무료 한도는 저장 1GB, 하루 읽기 5만 번·쓰기 2만 번 수준이라 혼자 쓰기에는 충분해요.
 - 설정의 **백업 파일 저장**으로 전체를 파일 하나로 받아둘 수 있어요.
 
