@@ -200,7 +200,7 @@ details summary{cursor:pointer;font-size:13px;color:var(--mute);min-height:36px;
 #tour{position:fixed;inset:0;z-index:60}
 #tour .hole{position:fixed;border-radius:20px;border:2px solid var(--pink-strong);box-shadow:0 0 0 9999px rgba(20,20,22,.42);transition:all .25s ease;pointer-events:none}
 #tour .hole.none{border-color:transparent;left:50%;top:50%;width:0;height:0}
-#tour .tcard{position:fixed;left:50%;transform:translateX(-50%);width:min(360px, calc(100vw - 32px));background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px 22px 18px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.18)}
+#tour .tcard{position:fixed;left:50%;transform:translateX(-50%);max-height:calc(100% - 28px);overflow-y:auto;width:min(360px, calc(100vw - 32px));background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px 22px 18px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.18)}
 #tour .tstep{font-family:var(--mono);font-size:12px;color:var(--mute);letter-spacing:.12em}
 #tour .ttitle{margin:0;font-size:18px;font-weight:600;letter-spacing:-.01em}
 #tour .tdesc{margin:0;font-size:14px;line-height:1.65;color:var(--mute);text-wrap:balance}
@@ -987,20 +987,28 @@ function placeTour(){
   if(!TOUR.on) return;
   const st=TOUR_STEPS[TOUR.i], n=TOUR_STEPS.length, last=TOUR.i===n-1;
   const el = st.sel ? document.querySelector(st.sel) : null;
-  if(el && el.closest('#scroller')){ const sc=$('#scroller'); const r0=el.getBoundingClientRect(), sr=sc.getBoundingClientRect(); if(r0.top<sr.top+80 || r0.bottom>sr.bottom-40) sc.scrollTop += (r0.top - sr.top) - sr.height*0.3; }
-  const r = el ? el.getBoundingClientRect() : null, pad=8;
+  /* bring a target inside the scrolling area near the top, so the guide card fits under it */
+  if(el && el.closest('#scroller')){ const sc=$('#scroller'); const r0=el.getBoundingClientRect(), sr=sc.getBoundingClientRect(); sc.scrollTop += (r0.top - sr.top) - 24; }
+  const r = el ? el.getBoundingClientRect() : null, pad=8, m=14;
   const hole = r ? `<div class="hole" style="left:${r.left-pad}px;top:${r.top-pad}px;width:${r.width+pad*2}px;height:${r.height+pad*2}px;border-radius:${el.id==='tab-add'?'40px':'22px'}"></div>` : `<div class="hole none"></div>`;
-  const vh=window.innerHeight; let pos;
-  if(!r) pos=`top:50%;transform:translate(-50%,-50%)`;
-  else if(r.top > vh*0.5) pos=`bottom:${Math.round(vh-r.top+pad+14)}px`;
-  else pos=`top:${Math.round(r.bottom+pad+14)}px`;
-  $('#tour').innerHTML = hole + `<div class="tcard" role="dialog" aria-modal="true" aria-labelledby="t-title" style="${pos}">
+  $('#tour').innerHTML = hole + `<div class="tcard" role="dialog" aria-modal="true" aria-labelledby="t-title" style="top:0;visibility:hidden">
     <span class="tstep">${TOUR.i+1} / ${n}</span>
     <h2 class="ttitle" id="t-title">${esc(st.t)}</h2>
     <p class="tdesc">${esc(st.d)}</p>
     <div class="tdots" aria-hidden="true">${TOUR_STEPS.map((_,k)=>`<span class="${k===TOUR.i?'on':''}"></span>`).join('')}</div>
     <div class="tfoot"><button class="textbtn" data-act="tour-skip">건너뛰기</button><button class="tnext" data-act="tour-next">${last?'시작하기':'다음'}</button></div>
   </div>`;
+  const card=$('#tour .tcard'), ch=card.offsetHeight, vh=window.innerHeight;
+  let top;
+  if(!r) top=(vh-ch)/2;
+  else {
+    const below=vh-(r.bottom+pad)-m, above=(r.top-pad)-m;
+    if(below >= ch+m) top=r.bottom+pad+m;
+    else if(above >= ch+m) top=r.top-pad-m-ch;
+    else top=vh-ch-m;
+  }
+  top=Math.max(m, Math.min(top, vh-ch-m));
+  card.style.top=Math.round(top)+'px'; card.style.visibility='visible';
 }
 window.addEventListener('resize', ()=>{ if(TOUR.on) placeTour(); });
 
