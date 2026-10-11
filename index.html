@@ -99,6 +99,11 @@ mark{background:var(--mark);color:var(--ink);border-radius:4px;padding:0 2px}
 .empty{background:var(--surface);border-radius:24px;padding:24px 22px;display:flex;flex-direction:column;gap:14px;align-items:flex-start}
 .empty p{margin:0;color:var(--mute);font-size:14px}
 .empty h3{margin:0;font-size:17px;font-weight:600}
+.empty.first{padding:18px 20px 16px;gap:6px}
+.empty.first p{line-height:1.55}
+.empty .erow{display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px;margin-top:8px}
+#sheet.touring{align-items:flex-start}
+#sheet.touring .panel{max-height:calc(100% - var(--tgap,260px))}
 
 .btn{height:52px;border-radius:26px;border:0;background:var(--ink);color:var(--bg);font-weight:500;font-size:15px;padding:0 22px;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-decoration:none}
 .btn.pink{background:var(--pink);color:var(--on-pink)}
@@ -454,7 +459,7 @@ const thumbImage = blob => compressImage(blob, 200, 90000, 40000);
 const P = { name:'Gemini',
   models:[['gemini-3.8-flash','Gemini 3.8 Flash · 글자를 더 정확히 읽어요'],['gemini-3.5-flash-lite','Gemini 3.5 Flash-Lite · 더 빨라요']],
   keyUrl:'https://aistudio.google.com/app/apikey',
-  steps:['아래 버튼으로 Google AI Studio를 열고 구글 계정으로 로그인해요.','<b>API 키 만들기</b>를 눌러요. 프로젝트가 없다고 나오면 화면에서 <b>프로젝트 만들기</b>를 먼저 눌러요.','<b>AIza</b>로 시작하는 키를 복사해서 아래 칸에 붙여넣어요.'] };
+  steps:['아래 버튼으로 Google AI Studio를 열고 구글 계정으로 로그인해요.','<b>API 키 만들기</b>를 눌러요. 프로젝트가 없다고 나오면 화면에서 <b>프로젝트 만들기</b>를 먼저 눌러요.','만들어진 키를 복사해서 아래 칸에 붙여넣어요.'] };
 const GEMINI_CHAIN=['gemini-3.8-flash','gemini-3.6-flash','gemini-3.5-flash-lite'];
 let AIS={keys:{}, models:{}};
 const aiLSKey = () => 'cc_ai_'+(S.user ? S.user.uid : 'local');
@@ -634,11 +639,10 @@ function viewHome(){
   <div style="margin-top:-8px"><div class="eyebrow">${esc(date)}</div><h1 class="headline">${head}</h1></div>`;
   h+=dataErrHTML();
   if(S.user && S.migrate>0) h+=`<div class="banner"><p>이 기기에만 있던 캡처 <b>${S.migrate}개</b>를 계정으로 옮길까요?</p><button class="btn sm" data-act="migrate" ${S.busy?'disabled':''}>${S.busy?SPIN(18):'옮기기'}</button></div>`;
-  if(!S.user && n>0 && !LS.get('cc_local_warn_off')) h+=`<div class="banner"><p><b>이 기기에만 저장돼 있어요.</b> 홈 화면 앱을 지우거나 방문 기록을 지우면 사라져요. 로그인하면 계정에 안전하게 보관돼요.</p><button class="btn sm" data-act="go-account">로그인</button></div>`;
+  if(!S.user && n>0 && !LS.get('cc_local_warn_off')) h+=`<div class="banner"><p><b>이 기기에만 저장돼 있어요.</b><br>로그인하면 계정에 안전하게 보관돼요.</p><button class="btn sm" data-act="go-account">로그인</button></div>`;
   h+=`<button class="searchbar" id="searchbar" data-act="go-search">${ic(I.search,20)}캡처 속 글자까지 검색</button>`;
   if(!n && !S.folders.length && !S.dataErr){
-    h+=`<div class="empty">${LOGO(56)}<h3>첫 캡처를 올려보세요</h3><p>트위터나 인스타에서 찍어둔 화면을 올리면 AI가 이미지 속 글자를 읽고, 요약과 태그를 붙여 알맞은 폴더에 넣어줘요. 링크만 저장할 수도 있어요.</p><button class="btn pink" data-act="add">${ic(I.plus,20)}캡처 올리기</button>
-    ${!hasAI()?`<button class="textbtn" data-act="go-ai">${ic(I.spark,16)}AI 정리를 쓰려면 내 AI 연결하기</button>`:''}</div>`;
+    h+=`<div class="empty first"><h3>첫 캡처를 올려보세요</h3><p>캡처나 링크를 올리면 AI가 글자를 읽고, 요약과 태그를 붙여 폴더에 정리해줘요.</p><div class="erow"><button class="btn sm pink" data-act="add">${ic(I.plus,18)}캡처 올리기</button>${!hasAI()?`<button class="textbtn" data-act="go-ai">${ic(I.spark,16)}내 AI 연결하기</button>`:''}</div></div>`;
   }
   h+=`<section class="section" id="folders-sec"><div class="sec-head"><h2>폴더</h2>${S.folders.length?`<button class="textbtn" data-act="${S.selMode?'sel-done':'sel-start'}">${S.selMode?'완료':'선택'}</button>`:''}</div><div class="folders">${folderCards()}</div>${bulkBar()}</section>`;
   if(n) h+=`<section class="section"><div class="sec-head"><h2>최근 캡처</h2></div><div class="list">${S.caps.slice(0,30).map(c=>rowHTML(c)).join('')}</div></section>`;
@@ -747,8 +751,9 @@ function accountCard(){
   const u=S.user;
   if(!u) return `<div class="card" id="acct-card">
     <h2>계정</h2>
-    <p><b style="color:var(--ink)">지금은 로그인 없이 이 기기에만 저장하고 있어요.</b> 홈 화면 앱을 지우거나 Safari·Chrome 방문 기록을 지우면 캡처가 사라져요. 홈 화면에 추가하지 않고 브라우저로만 쓰면, 아이폰은 한동안 열지 않을 때 저장 내용을 지울 수도 있어요.</p>
-    <p>구글로 로그인하면 캡처가 내 계정에 보관돼서, 앱을 지워도 남아 있고 다른 기기에서도 그대로 보여요. 이 기기에 있던 캡처도 옮길 수 있어요.</p>
+    <p><b style="color:var(--ink)">지금은 이 기기에만 저장하고 있어요.</b></p>
+    <p>앱이나 방문 기록을 지우면 캡처도 함께 사라져요.</p>
+    <p>구글로 로그인하면 계정에 안전하게 보관되고, 다른 기기에서도 볼 수 있어요.</p>
     ${S.loginErr?`<p class="note err">${esc(S.loginErr)}</p>`:''}
     <button class="btn" data-act="login" ${S.loggingIn?'disabled':''}>${S.loggingIn?SPIN(20)+'로그인 창을 여는 중…':'Google 계정으로 로그인'}</button>
   </div>`;
@@ -803,7 +808,7 @@ function openAdd(mode){
     draft:{title:'',summary:'',tags:'',link:'',text:'',source:'',url:'',memo:''}, choice:null, aiFolderId:null, aiNew:'', newName:'', ctl:null};
   $('#sheet').hidden=false; renderSheet(); const pn=$('#sheet .panel'); if(pn) pn.scrollTop=0; return true;
 }
-function closeAdd(){ if(!S.add) return; S.add.ctl?.abort(); if(S.add.preview) URL.revokeObjectURL(S.add.preview); S.add=null; $('#sheet').hidden=true; }
+function closeAdd(){ if(!S.add) return; S.add.ctl?.abort(); if(S.add.preview && S.add.preview.startsWith('blob:')) URL.revokeObjectURL(S.add.preview); S.add=null; $('#sheet').hidden=true; }
 async function setFile(file){
   const A=S.add; if(!A) return;
   if(!/^image\/(png|jpeg|webp)$/.test(file.type)){ A.phase='pick'; A.err='PNG, JPG, WEBP 이미지만 올릴 수 있어요. GIF는 올릴 수 없어요.'; renderSheet(); return; }
@@ -1128,36 +1133,80 @@ async function restore(file){
 }
 
 /* ============ usage guide (first open) ============ */
+const field = sel => document.querySelector(sel)?.closest('.field');
 const TOUR_STEPS=[
-  {t:'캐치캐치에 오신 걸 환영해요', d:'트위터·인스타에서 찍어둔 캡처를 AI가 읽고 정리해 두는 보관함이에요. 어떻게 쓰는지 짧게 보여드릴게요.'},
-  {sel:'#tab-add', t:'캡처 올리기', d:'가운데 분홍 버튼으로 캡처나 링크를 올려요. AI가 글자를 읽고 제목·요약·태그를 붙여줘요.'},
-  {sel:'#tab-add', t:'저장 전에 고칠 수 있어요', d:'AI가 정리한 내용과 추천 폴더를 창에서 확인하고, 마음에 들게 고친 뒤 저장해요.'},
-  {sel:'#folders-sec', t:'폴더로 모아보기', d:'AI가 알맞은 폴더를 추천하거나 새로 만들어줘요. 캡처를 꾹 누르면 다른 폴더로 옮길 수 있고, 선택으로 여러 개를 한 번에 지울 수도 있어요.'},
-  {sel:'#searchbar', t:'이미지 속 글자까지 검색', d:'기억나는 단어만 입력하면 캡처 속 글자까지 찾아줘요. AI에게 질문할 수도 있어요.'},
-  {sel:'#gear', t:'내 AI 연결하기', d:'설정에서 무료 Gemini 키를 넣으면 AI 정리가 켜져요. 로그인하지 않아도 쓸 수 있어요.'},
-  {sel:'#gear', t:'로그인하면 안전하게', d:'로그인하지 않으면 이 기기에만 저장돼요. 설정에서 구글로 로그인하면 계정에 보관되고 다른 기기에서도 보여요.'}
+  {scene:'home', t:'캐치캐치에 오신 걸 환영해요', d:'캡처한 정보를 AI가 읽고 정리해 두는 보관함이에요. 어떻게 쓰는지 짧게 보여드릴게요.'},
+  {scene:'pick', tgt:()=>[$('#sheet .seg'), $('#drop')], t:'캡처 올리기', d:'가운데 분홍 + 버튼을 누르면 이 창이 열려요. 캡처 이미지를 고르거나 링크를 붙여넣으면 AI가 글자를 읽고 정리해줘요.'},
+  {scene:'review', tgt:()=>[$('#sheet .pv'), field('#f-title'), field('#f-sum'), field('#f-tags')], t:'저장 전에 고칠 수 있어요', d:'AI가 붙인 제목·요약·태그를 확인하고, 마음에 들게 고친 뒤 저장해요.'},
+  {scene:'review', tgt:()=>[$('#sheet .opts')?.parentElement, $('#save-btn')], t:'알맞은 폴더에 쏙', d:'AI가 내용에 맞는 폴더를 추천하거나 새 폴더를 만들어줘요. 다른 폴더를 골라도 돼요.'},
+  {scene:'home', tgt:()=>[$('#folders-sec')], t:'폴더로 모아보기', d:'저장한 캡처는 폴더별로 모여요. 캡처를 꾹 누르면 다른 폴더로 옮길 수 있고, 선택으로 여러 개를 한 번에 지울 수도 있어요.'},
+  {scene:'search', tgt:()=>[$('#view .searchbar'), $('#view .chips')], t:'이미지 속 글자까지 검색', d:'기억나는 단어만 입력하면 캡처 속 글자까지 찾아줘요. AI에게 질문할 수도 있어요.'},
+  {scene:'settings', tgt:()=>[$('#ai-card h2'), $('#ai-card .steps'), field('#s-key')], t:'내 AI 연결하기', d:'여기에 무료 Gemini 키를 넣으면 AI 정리가 켜져요. 로그인하지 않아도 쓸 수 있어요.'},
+  {scene:'settings', tgt:()=>[$('#acct-card')], t:'로그인하면 안전하게', d:'로그인하지 않으면 이 기기에만 저장돼요. 여기서 구글로 로그인하면 계정에 보관되고 다른 기기에서도 보여요.'}
 ];
 const TOUR={on:false, i:0};
-function startTour(){ if(S.add) closeAdd(); S.stack=[]; S.view='home'; renderView(); toTop(); TOUR.on=true; TOUR.i=0; $('#tour').hidden=false; placeTour(); }
-function endTour(){ TOUR.on=false; $('#tour').hidden=true; $('#tour').innerHTML=''; LS.set('cc_tour_done','1'); }
+const DEMO_IMG='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="240" height="300" viewBox="0 0 240 300"><rect width="240" height="300" fill="#FFFFFF"/><circle cx="34" cy="34" r="14" fill="#EDBFC6"/><rect x="56" y="24" width="90" height="9" rx="4.5" fill="#2A2A2C"/><rect x="56" y="38" width="60" height="7" rx="3.5" fill="#B9B9B6"/><rect x="20" y="66" width="200" height="9" rx="4.5" fill="#2A2A2C"/><rect x="20" y="84" width="170" height="9" rx="4.5" fill="#2A2A2C"/><rect x="20" y="110" width="200" height="120" rx="12" fill="#EBEBE9"/><rect x="36" y="130" width="120" height="8" rx="4" fill="#9A9A97"/><rect x="36" y="150" width="150" height="8" rx="4" fill="#9A9A97"/><rect x="36" y="170" width="100" height="8" rx="4" fill="#9A9A97"/><rect x="36" y="190" width="135" height="8" rx="4" fill="#9A9A97"/><rect x="20" y="250" width="44" height="8" rx="4" fill="#D98C9C"/><rect x="74" y="250" width="44" height="8" rx="4" fill="#B9B9B6"/></svg>`);
+/* sample add window for the guide: nothing is analyzed or saved */
+function tourAdd(phase){
+  if(S.move) closeMove(); if(S.exp) closeExport();
+  if(!S.add || !S.add.demo){ if(!openAdd('capture')) return; S.add.demo=true; }
+  const A=S.add; A.mode='capture'; A.err=null; A.note=null; A.ctl=null;
+  if(phase==='review'){
+    Object.assign(A, {phase:'review', preview:DEMO_IMG, file:{name:'예시 캡처.png'}, aiFolderId:null, aiNew:'디자인 팁', choice:'aiNew', newName:''});
+    A.draft={title:'피그마 자주 쓰는 단축키 7가지', summary:'컴포넌트 만들기는 Ctrl+Alt+K\n오토 레이아웃은 Shift+A\n선택한 레이어 숨기기는 Ctrl+Shift+H', tags:'피그마, 단축키, 디자인', link:'', text:'피그마 단축키 모음\n1. 컴포넌트 만들기 Ctrl+Alt+K\n2. 오토 레이아웃 Shift+A', source:'X', url:'', memo:''};
+  } else Object.assign(A, {phase:'pick', preview:null, file:null});
+  renderSheet();
+}
+function tourScene(sc){
+  const sheet=$('#sheet');
+  if(sc==='pick' || sc==='review'){
+    if(S.view!=='home'){ S.stack=[]; S.view='home'; renderView(); toTop(); }
+    sheet.classList.add('touring'); tourAdd(sc); return;
+  }
+  sheet.classList.remove('touring'); sheet.style.removeProperty('--tgap');
+  if(S.add) closeAdd(); if(S.move) closeMove(); if(S.exp) closeExport();
+  if(S.view===sc) return;
+  S.stack = sc==='home' ? [] : [{view:'home'}];
+  if(sc==='search') S.q='';
+  Object.assign(S, {view:sc, selMode:false, sel:new Set(), confirmBulk:false, edit:null, confirmLogout:false});
+  renderView(); toTop();
+}
+function tourGo(i){ TOUR.i=i; tourScene(TOUR_STEPS[i].scene); placeTour(); }
+function startTour(){ TOUR.on=true; $('#tour').hidden=false; tourGo(0); }
+function endTour(){ TOUR.on=false; $('#tour').hidden=true; $('#tour').innerHTML=''; LS.set('cc_tour_done','1'); tourScene('home'); }
 function placeTour(){
   if(!TOUR.on) return;
-  const st=TOUR_STEPS[TOUR.i], n=TOUR_STEPS.length, last=TOUR.i===n-1;
-  const el = st.sel ? document.querySelector(st.sel) : null;
-  /* bring a target inside the scrolling area near the top, so the guide card fits under it */
-  if(el && el.closest('#scroller')){ const sc=$('#scroller'); const r0=el.getBoundingClientRect(), sr=sc.getBoundingClientRect(); sc.scrollTop += (r0.top - sr.top) - 24; }
-  const r = el ? el.getBoundingClientRect() : null, pad=8, m=14;
-  const hole = r ? `<div class="hole" style="left:${r.left-pad}px;top:${r.top-pad}px;width:${r.width+pad*2}px;height:${r.height+pad*2}px;border-radius:${el.id==='tab-add'?'40px':'22px'}"></div>` : `<div class="hole none"></div>`;
-  $('#tour').innerHTML = hole + `<div class="tcard" role="dialog" aria-modal="true" aria-labelledby="t-title" style="top:0;visibility:hidden">
+  const st=TOUR_STEPS[TOUR.i], n=TOUR_STEPS.length, last=TOUR.i===n-1, m=14, pad=8, vh=window.innerHeight;
+  /* 1) draw the card hidden to learn its height */
+  $('#tour').innerHTML = `<div class="hole none"></div><div class="tcard" role="dialog" aria-modal="true" aria-labelledby="t-title" style="top:0;visibility:hidden">
     <span class="tstep">${TOUR.i+1} / ${n}</span>
     <h2 class="ttitle" id="t-title">${esc(st.t)}</h2>
     <p class="tdesc">${esc(st.d)}</p>
     <div class="tdots" aria-hidden="true">${TOUR_STEPS.map((_,k)=>`<span class="${k===TOUR.i?'on':''}"></span>`).join('')}</div>
     <div class="tfoot"><button class="textbtn" data-act="tour-skip">건너뛰기</button><button class="tnext" data-act="tour-next">${last?'시작하기':'다음'}</button></div>
   </div>`;
-  const card=$('#tour .tcard'), ch=card.offsetHeight, vh=window.innerHeight;
+  const hole=$('#tour .hole'), card=$('#tour .tcard'), ch=card.offsetHeight;
+  const els = (st.tgt ? st.tgt() : []).filter(Boolean);
+  const inSheet = !!(els[0] && els[0].closest('#sheet'));
+  /* 2) the add window sits at the top and leaves room for the card below it */
+  if(inSheet) $('#sheet').style.setProperty('--tgap', (ch + m*2) + 'px');
+  /* 3) scroll the target near the top of whatever scrolls it */
+  const box = () => { if(!els.length) return null; const rs=els.map(e=>e.getBoundingClientRect()); return {top:Math.min(...rs.map(r=>r.top)), bottom:Math.max(...rs.map(r=>r.bottom)), left:Math.min(...rs.map(r=>r.left)), right:Math.max(...rs.map(r=>r.right))}; };
+  let clip={top:0, bottom:vh};
+  if(els.length){
+    const sc = inSheet ? $('#sheet .panel') : (els[0].closest('#scroller') ? $('#scroller') : null);
+    if(sc){ const b0=box(), sr=sc.getBoundingClientRect(); sc.scrollTop += (b0.top - sr.top) - (inSheet ? 12 : 24); const r2=sc.getBoundingClientRect(); clip={top:r2.top, bottom:r2.bottom}; }
+  }
+  let r=box();
+  if(r){ r={...r, top:Math.max(r.top, clip.top+2), bottom:Math.min(r.bottom, clip.bottom-2)}; if(r.bottom<=r.top) r=null; }
+  if(r){
+    const round = els.length===1 && els[0].id==='tab-add' ? 40 : 22;
+    hole.className='hole'; hole.style.cssText=`left:${r.left-pad}px;top:${r.top-pad}px;width:${r.right-r.left+pad*2}px;height:${r.bottom-r.top+pad*2}px;border-radius:${round}px`;
+  }
+  /* 4) place the card: under the add window, otherwise below/above the target */
   let top;
   if(!r) top=(vh-ch)/2;
+  else if(inSheet) top=vh-ch-m;
   else {
     const below=vh-(r.bottom+pad)-m, above=(r.top-pad)-m;
     if(below >= ch+m) top=r.bottom+pad+m;
@@ -1174,7 +1223,7 @@ document.addEventListener('click', async e=>{
   const el=e.target.closest('[data-act]'); if(!el) return;
   const act=el.dataset.act, id=el.dataset.id;
   switch(act){
-    case 'tour-next': if(TOUR.i < TOUR_STEPS.length-1){ TOUR.i++; placeTour(); } else endTour(); break;
+    case 'tour-next': if(TOUR.i < TOUR_STEPS.length-1) tourGo(TOUR.i+1); else endTour(); break;
     case 'tour-skip': endTour(); break;
     case 'tour': startTour(); break;
     case 'login': login(); break;
