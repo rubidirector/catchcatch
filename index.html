@@ -2,7 +2,8 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="format-detection" content="telephone=no">
 <title>캐치캐치</title>
 <meta name="description" content="캡처와 링크를 올리면 AI가 읽고 요약해 폴더에 정리해 주는 보관함">
 <meta name="theme-color" content="#EBEBE9" media="(prefers-color-scheme: light)">
@@ -24,20 +25,25 @@
   --pink:#EDBFC6; --on-pink:#2A2A2C; --mark:#F2CCD2; --danger:#A3303F; --ok:#2F6B4A; --scrim:rgba(30,30,32,.38);
   --sans:'IBM Plex Sans KR',system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+  --tabh:calc(70px + env(safe-area-inset-bottom,0px));
   color-scheme:light;
 }
 @media (prefers-color-scheme: dark){:root{
   --bg:#1D1D1F; --surface:#29292C; --sunk:#333336; --ink:#ECECEA; --mute:#A4A4A8; --line:#3B3B3F;
   --pink:#E6B1BA; --on-pink:#1D1D1F; --mark:#6B4148; --danger:#F08A97; --ok:#8FD1AC; --scrim:rgba(0,0,0,.55); color-scheme:dark}}
 
-html,body{background:var(--bg);margin:0}
-body{color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;padding-top:env(safe-area-inset-top,0px)}
+html,body{background:var(--bg);margin:0;height:100%;overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulation}
+body{position:fixed;inset:0;width:100%}
+#scroller{position:fixed;left:0;right:0;top:0;bottom:var(--tabh);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-top:env(safe-area-inset-top,0px)}
+body.gate #scroller{bottom:0}
+button,a,.tab,.addbtn{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+body{color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
 *{box-sizing:border-box}
 img{max-width:100%}
 [hidden]{display:none!important}
 button,input,textarea,select{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-.wrap{max-width:520px;margin:0 auto;padding-inline:20px;padding-block:16px 130px;display:flex;flex-direction:column;gap:22px}
+.wrap{max-width:520px;margin:0 auto;padding-inline:20px;padding-block:16px 48px;display:flex;flex-direction:column;gap:22px}
 body.gate .wrap{padding-block:16px 40px}
 body.gate .tabbar{display:none}
 .top{display:flex;align-items:center;justify-content:space-between;min-height:48px;gap:8px}
@@ -95,7 +101,7 @@ mark{background:var(--mark);color:var(--ink);border-radius:4px;padding:0 2px}
 .hero h1{margin:0;font-size:30px;line-height:1.3;font-weight:500;letter-spacing:-.02em;text-wrap:balance}
 .hero p{margin:0;color:var(--mute);font-size:15px}
 
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-top:1px solid var(--line);padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px))}
+.tabbar{position:fixed;left:0;right:0;bottom:0;height:var(--tabh);z-index:5;background:var(--surface);border-top:1px solid var(--line);padding:8px 16px env(safe-area-inset-bottom,0px);transform:translateZ(0)}
 .tabs{max-width:520px;margin:0 auto;display:flex;justify-content:space-around;align-items:center}
 .tab{width:64px;height:52px;border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--mute);cursor:pointer;font-size:11px}
 .tab[aria-current="page"]{color:var(--ink);font-weight:600}
@@ -121,7 +127,8 @@ mark{background:var(--mark);color:var(--ink);border-radius:4px;padding:0 2px}
 .mrow .v{font-family:var(--mono);font-size:12px;color:var(--mute);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
 .mrow a{color:var(--ink);display:flex;align-items:center;gap:8px;min-width:0;text-decoration:none}
 .mrow a span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sel{height:40px;border-radius:20px;border:1px solid var(--line);background:var(--surface);padding:0 12px;max-width:60%}
+.sel{height:40px;border-radius:20px;border:1px solid var(--line);background:var(--surface);padding:0 12px;max-width:60%;font-size:16px}
+input,textarea,select{font-size:16px}
 .actions{display:flex;gap:10px;flex-wrap:wrap}
 .actions .btn{flex:1 1 140px}
 .confirm{background:var(--surface);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px}
@@ -147,7 +154,8 @@ textarea.inp{resize:vertical;line-height:1.6}
 .steps{margin:0;padding-left:20px;font-size:14px;color:var(--ink);display:flex;flex-direction:column;gap:8px}
 .steps b{font-weight:600}
 
-.sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:var(--scrim);padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:var(--scrim);padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));overscroll-behavior:contain;touch-action:none}
+.sheet .panel{touch-action:pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .panel{width:100%;max-width:520px;max-height:100%;overflow-y:auto;background:var(--bg);border-radius:28px;padding:20px 20px 24px;display:flex;flex-direction:column;gap:18px;box-shadow:0 24px 60px rgba(0,0,0,.18)}
 .grab{width:40px;height:4px;border-radius:2px;background:var(--line);align-self:center}
 .shead{display:flex;align-items:center;justify-content:space-between}
@@ -178,7 +186,7 @@ details summary{cursor:pointer;font-size:13px;color:var(--mute);min-height:36px;
 </style>
 </head>
 <body class="gate">
-<div id="view" class="wrap" aria-live="polite"></div>
+<div id="scroller"><div id="view" class="wrap" aria-live="polite"></div></div>
 
 <nav class="tabbar" aria-label="메뉴">
   <div class="tabs">
@@ -226,9 +234,10 @@ const FIREBASE_CONFIG = {
 */
 
 (function(){
-const VERSION = 'v4.2';
+const VERSION = 'v4.4';
 const FB_VER = '10.12.2';
 const $ = s => document.querySelector(s);
+const toTop = () => { const sc=document.getElementById('scroller'); if(sc) sc.scrollTop=0; };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ic = (p, n=22) => `<svg width="${n}" height="${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 const I = {
@@ -247,9 +256,9 @@ const I = {
   gear:'<circle cx="12" cy="12" r="3"/><path d="M12 3 V5.5 M12 18.5 V21 M3 12 H5.5 M18.5 12 H21 M5.6 5.6 L7.4 7.4 M16.6 16.6 L18.4 18.4 M5.6 18.4 L7.4 16.6 M16.6 7.4 L18.4 5.6"/>',
   copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8 V5 a1 1 0 0 0 -1 -1 H5 a1 1 0 0 0 -1 1 V15 a1 1 0 0 0 1 1 H8"/>'
 };
-/* 캐치캐치 logo: one continuous line drawing of a hand pinching the pink sphere */
-const HAND = 'M8 44 C 9 36, 10 29, 14 22 C 16 18.5, 20 16, 25.5 15.2 C 28 14.9, 28.6 18.3, 26.4 18.9 C 23.5 19.6, 20.5 20.6, 18.5 22.5 C 17.3 23.7, 17.6 25.5, 19 25.6 C 21.5 25.7, 23.5 25.3, 26 25.6 C 28.4 25.9, 28.2 29.3, 25.6 29.6 C 21 30.2, 17 33.5, 15.5 37 C 14.8 39, 14.6 41.5, 14.8 44';
-const LOGO = (w=32,h=30) => `<svg width="${w}" height="${h}" viewBox="6 13 35 33" style="display:block;flex:0 0 auto" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="33.2" cy="22.4" r="6.6" style="fill:var(--pink);stroke:none"/><path d="${HAND}"/></svg>`;
+/* 캐치캐치 logo: tall, narrow ㅋㅊ joined along one top line, even gothic strokes in the app's pink */
+const MARK_D='M4 14H56M24 14V66M4 38H24M42 2V14M42 14L30 66M42 14L55 66';
+const LOGO = (h=30) => `<svg width="${Math.round(h*58/68)}" height="${h}" viewBox="1 1 58 68" style="display:block;flex:0 0 auto" fill="none" stroke="var(--pink)" stroke-width="5.5" stroke-linecap="butt" stroke-linejoin="miter" role="img" aria-label="캐치캐치 로고"><path d="${MARK_D}"/></svg>`;
 const SPIN = n => `<svg width="${n}" height="${n}" viewBox="0 0 40 40" aria-hidden="true"><g class="spin"><path d="M20 3 A17 17 0 0 1 20 37" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M20 10 A10 10 0 0 1 20 30" fill="none" stroke="currentColor" stroke-width="1.2"/></g><circle cx="17" cy="20" r="7" style="fill:var(--pink)"/></svg>`;
 const RULES = `rules_version = '2';
 service cloud.firestore {
@@ -495,13 +504,13 @@ const fname = s => (String(s||'캐치캐치').replace(/[\\/:*?"<>|\r\n]+/g,' ').
 async function copyText(t){ try{ await navigator.clipboard.writeText(t); toast('복사했어요'); }catch(e){ toast('길게 눌러 직접 복사해 주세요'); } }
 
 /* ---------- navigation ---------- */
-function go(view, extra){ S.stack.push({view:S.view, folderId:S.folderId, capId:S.capId}); Object.assign(S, {view, edit:null, confirmDel:false, rename:null, confirmFolderDel:false, confirmLogout:false}, extra||{}); if(view==='detail') S.tab='summary'; renderView(); window.scrollTo(0,0); }
-function back(){ const p=S.stack.pop() || {view:'home'}; Object.assign(S, p, {edit:null, confirmDel:false, rename:null, confirmFolderDel:false}); renderView(); window.scrollTo(0,0); }
-function home(){ S.stack=[]; S.view='home'; renderView(); window.scrollTo(0,0); }
+function go(view, extra){ S.stack.push({view:S.view, folderId:S.folderId, capId:S.capId}); Object.assign(S, {view, edit:null, confirmDel:false, rename:null, confirmFolderDel:false, confirmLogout:false}, extra||{}); if(view==='detail') S.tab='summary'; renderView(); toTop(); }
+function back(){ const p=S.stack.pop() || {view:'home'}; Object.assign(S, p, {edit:null, confirmDel:false, rename:null, confirmFolderDel:false}); renderView(); toTop(); }
+function home(){ S.stack=[]; S.view='home'; renderView(); toTop(); }
 
 /* ---------- gate screens ---------- */
 function viewSetup(){
-  return `<div class="top"><div class="logo">${LOGO()}<span>캐치캐치</span></div></div>
+  return `<div class="top"><div class="logo">${LOGO(30)}<span>캐치캐치</span></div></div>
   <div><div class="eyebrow">처음 한 번만</div><h1 class="headline">구글 로그인 연결하기</h1></div>
   <div class="card">
     <h2>Firebase에서 할 일</h2>
@@ -527,7 +536,7 @@ function viewSetup(){
   </form>`;
 }
 function viewLogin(){
-  return `<div class="hero">${LOGO(72,66)}
+  return `<div class="hero">${LOGO(84)}
     <div class="eyebrow">캐치캐치</div>
     <h1>좋은 정보는 캡처하고,<br>정리는 맡기세요</h1>
     <p>캡처를 올리면 AI가 글자를 읽고 요약해서 폴더에 넣어줘요. 구글로 로그인하면 iPad와 휴대폰 어디서든 같은 보관함을 볼 수 있어요.</p>
@@ -571,7 +580,7 @@ function viewHome(){
   if(!n) head='캡처를 올리면<br>AI가 읽고 정리해둘게요';
   else if(today) head=`오늘 모은 캡처 <b>${today}개</b>,<br>모두 ${n}개를 정리해뒀어요`;
   else head=`캡처 <b>${n}개</b>를<br>폴더 ${S.folders.length}개에 정리해뒀어요`;
-  let h=`<div class="top"><div class="logo">${LOGO()}<span>캐치캐치</span></div><button class="iconbtn" data-act="go-settings" aria-label="설정">${ic(I.gear,20)}${hasAI()?'':'<span class="ping"></span>'}</button></div>
+  let h=`<div class="top"><div class="logo">${LOGO(30)}<span>캐치캐치</span></div><button class="iconbtn" data-act="go-settings" aria-label="설정">${ic(I.gear,20)}${hasAI()?'':'<span class="ping"></span>'}</button></div>
   <div><div class="eyebrow">${esc(date)}</div><h1 class="headline">${head}</h1></div>`;
   h+=dataErrHTML();
   if(QUEUE.length){ const run=QUEUE.find(j=>j.status==='running'); h+=`<div class="pill" role="status">${SPIN(22)}<span>AI가 ${QUEUE.length}개를 정리하고 있어요${run&&run.statusMsg?' · '+esc(run.statusMsg):''}</span></div>`; }
@@ -580,7 +589,7 @@ function viewHome(){
   }
   h+=`<button class="searchbar" data-act="go-search">${ic(I.search,20)}캡처 속 글자까지 검색</button>`;
   if(!n && !S.folders.length && !S.dataErr){
-    h+=`<div class="empty">${LOGO(52,48)}<h3>첫 캡처를 올려보세요</h3><p>트위터나 인스타에서 찍어둔 화면을 올리면 AI가 이미지 속 글자를 읽고, 요약과 태그를 붙여 알맞은 폴더에 넣어줘요. 링크만 저장할 수도 있어요.</p><button class="btn pink" data-act="add">${ic(I.plus,20)}캡처 올리기</button>
+    h+=`<div class="empty">${LOGO(56)}<h3>첫 캡처를 올려보세요</h3><p>트위터나 인스타에서 찍어둔 화면을 올리면 AI가 이미지 속 글자를 읽고, 요약과 태그를 붙여 알맞은 폴더에 넣어줘요. 링크만 저장할 수도 있어요.</p><button class="btn pink" data-act="add">${ic(I.plus,20)}캡처 올리기</button>
     ${!hasAI()?`<button class="textbtn" data-act="go-ai">${ic(I.spark,16)}AI 정리를 쓰려면 내 AI 연결하기</button>`:''}</div>`;
   }
   h+=`<section class="section"><div class="sec-head"><h2>폴더</h2></div><div class="folders">${folderCards()}</div></section>`;
@@ -811,9 +820,9 @@ function openAdd(mode){
   if(S.add && S.add.phase!=='saving') closeAdd();
   S.add={mode:mode||'capture', file:null, preview:null, img:null, phase:'pick', note:null, err:null,
     draft:{title:'',summary:'',tags:'',link:'',text:'',source:'',url:'',memo:''}, choice:null, aiFolderId:null, aiNew:'', newName:'', ctl:null};
-  $('#sheet').hidden=false; document.body.style.overflow='hidden'; renderSheet(); return true;
+  $('#sheet').hidden=false; renderSheet(); const pn=$('#sheet .panel'); if(pn) pn.scrollTop=0; return true;
 }
-function closeAdd(){ if(!S.add) return; S.add.ctl?.abort(); if(S.add.preview) URL.revokeObjectURL(S.add.preview); S.add=null; $('#sheet').hidden=true; document.body.style.overflow=''; }
+function closeAdd(){ if(!S.add) return; S.add.ctl?.abort(); if(S.add.preview) URL.revokeObjectURL(S.add.preview); S.add=null; $('#sheet').hidden=true; }
 async function setFile(file){
   const A=S.add; if(!A) return;
   if(!/^image\/(png|jpeg|webp|gif)$/.test(file.type)){ A.err='PNG, JPG, WEBP, GIF 이미지만 올릴 수 있어요.'; renderSheet(); return; }
@@ -884,7 +893,7 @@ function sheetHTML(){
     if(hasAI()) h+=`<div class="section" style="gap:8px"><span class="flabel">저장 방식</span><div class="seg" role="tablist" aria-label="저장 방식"><button role="tab" aria-selected="${QUICK()}" data-act="quick" data-id="1">${ic(I.spark,16)}바로 정리하기</button><button role="tab" aria-selected="${!QUICK()}" data-act="quick" data-id="0">확인하고 저장</button></div><p class="hint">${QUICK()?'AI가 읽고 알맞은 폴더에 바로 저장해요. 기다리지 않아도 되고, 여러 장을 한 번에 골라도 돼요.':'AI가 정리한 내용을 보고 고친 뒤 저장해요.'}</p></div>`;
     if(A.err) h+=`<p class="note err">${esc(A.err)}</p>`;
     if(A.mode==='capture'){
-      h+=`<div class="drop" id="drop">${LOGO(52,48)}<span>캡처 이미지를 고르면<br>${hasAI()?'AI가 글자를 읽고 요약해요':'제목과 요약을 붙여 저장해요'}</span><button class="btn pink" data-act="pick">${ic(I.image,20)}이미지 고르기</button><span class="hint">컴퓨터에서는 붙여넣기(Ctrl+V)나 끌어다 놓기도 돼요</span></div>`;
+      h+=`<div class="drop" id="drop">${LOGO(56)}<span>캡처 이미지를 고르면<br>${hasAI()?'AI가 글자를 읽고 요약해요':'제목과 요약을 붙여 저장해요'}</span><button class="btn pink" data-act="pick">${ic(I.image,20)}이미지 고르기</button><span class="hint">컴퓨터에서는 붙여넣기(Ctrl+V)나 끌어다 놓기도 돼요</span></div>`;
     } else {
       h+=`<form class="section" data-form="link"><div class="field"><label for="l-url">링크</label><input id="l-url" class="inp" type="url" inputmode="url" data-bind="add.draft.url" value="${esc(A.draft.url)}" placeholder="https://x.com/..." required></div>
       <div class="field"><label for="l-memo">메모 또는 본문 붙여넣기</label><textarea id="l-memo" class="inp" rows="5" data-bind="add.draft.memo" placeholder="게시글 내용을 붙여넣으면 AI가 더 잘 정리해요">${esc(A.draft.memo)}</textarea></div>
@@ -947,7 +956,7 @@ function saveAdd(){
   if(!capOf(id)) S.caps.unshift(Object.assign({id}, doc));
   write(FB.F.setDoc(ref('captures',id), doc)).catch(()=>{});
   closeAdd(); toast('저장했어요');
-  S.stack=[{view:'home'}]; S.view='detail'; S.capId=id; S.tab='summary'; S.edit=null; S.confirmDel=false; renderView(); window.scrollTo(0,0);
+  S.stack=[{view:'home'}]; S.view='detail'; S.capId=id; S.tab='summary'; S.edit=null; S.confirmDel=false; renderView(); toTop();
 }
 
 /* ---------- other actions ---------- */
@@ -1128,6 +1137,8 @@ document.addEventListener('paste', e=>{
 document.addEventListener('keydown', e=>{ if(e.key==='Escape' && S.add && S.add.phase!=='saving') closeAdd(); });
 $('#sheet').addEventListener('click', e=>{ if(e.target.id==='sheet' && S.add && S.add.phase!=='saving') closeAdd(); });
 
+['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t, e=>e.preventDefault(), {passive:false}));
+document.addEventListener('touchmove', e=>{ if(e.touches && e.touches.length>1) e.preventDefault(); }, {passive:false});
 window.addEventListener('beforeunload', e=>{ if(QUEUE.length){ e.preventDefault(); e.returnValue=''; } });
 
 /* ---------- boot ---------- */
