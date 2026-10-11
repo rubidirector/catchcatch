@@ -104,7 +104,8 @@ mark{background:var(--mark);color:var(--ink);border-radius:4px;padding:0 2px}
 .shot{border-radius:24px;background:var(--surface);overflow:hidden;display:flex;justify-content:center;min-height:120px;align-items:center}
 .shot img{display:block;width:100%;max-height:70vh;object-fit:contain}
 .seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:4px;border-radius:24px;background:var(--sunk)}
-.seg button{height:40px;border-radius:20px;border:0;background:transparent;cursor:pointer;font-size:14px}
+.seg button{height:40px;border-radius:20px;border:0;background:transparent;cursor:pointer;font-size:14px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.pill{display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 16px;border-radius:22px;background:var(--surface);border:1px solid var(--line);font-size:13px;width:100%;color:var(--ink)}
 .seg button[aria-selected="true"]{background:var(--surface);font-weight:600}
 .dtitle{margin:0;font-size:22px;font-weight:600;letter-spacing:-.02em;line-height:1.35;text-wrap:balance;overflow-wrap:anywhere}
 .bul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;font-size:15px;line-height:1.6}
@@ -146,8 +147,8 @@ textarea.inp{resize:vertical;line-height:1.6}
 .steps{margin:0;padding-left:20px;font-size:14px;color:var(--ink);display:flex;flex-direction:column;gap:8px}
 .steps b{font-weight:600}
 
-.sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center;background:var(--scrim)}
-.panel{width:100%;max-width:520px;max-height:94%;overflow-y:auto;background:var(--bg);border-radius:28px 28px 0 0;padding:14px 20px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:18px}
+.sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:var(--scrim);padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.panel{width:100%;max-width:520px;max-height:100%;overflow-y:auto;background:var(--bg);border-radius:28px;padding:20px 20px 24px;display:flex;flex-direction:column;gap:18px;box-shadow:0 24px 60px rgba(0,0,0,.18)}
 .grab{width:40px;height:4px;border-radius:2px;background:var(--line);align-self:center}
 .shead{display:flex;align-items:center;justify-content:space-between}
 .shead h2{margin:0;font-size:17px;font-weight:600}
@@ -225,7 +226,7 @@ const FIREBASE_CONFIG = {
 */
 
 (function(){
-const VERSION = 'v4.1';
+const VERSION = 'v4.2';
 const FB_VER = '10.12.2';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -409,16 +410,27 @@ async function aiErr(r, prov){
   else code='http';
   return {code, detail: detail ? `${s} · ${detail.slice(0,400)}` : String(s)};
 }
-async function callAI(text, imgB64, signal){
+const GEMINI_CHAIN=['gemini-3.8-flash','gemini-3.6-flash','gemini-3.5-flash-lite'];
+const wait=(ms,signal)=>new Promise((res,rej)=>{ const t=setTimeout(res,ms); if(signal) signal.addEventListener('abort',()=>{ clearTimeout(t); rej({code:'cancelled'}); },{once:true}); });
+async function callAI(text, imgB64, signal, onStatus){
   const prov=aiProv(), key=AIS.keys[prov], model=aiModel(prov);
   if(!key) throw {code:'no_key'};
   let r;
   if(prov==='gemini'){
     const parts=[]; if(imgB64) parts.push({inlineData:{mimeType:'image/jpeg', data:imgB64}}); parts.push({text});
-    r=await aiFetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{ method:'POST', signal,
-      headers:{'content-type':'application/json','x-goog-api-key':key},
-      body:JSON.stringify({ contents:[{role:'user', parts}], generationConfig:{ responseMimeType:'application/json', temperature:0.2, maxOutputTokens:8192 } }) });
-    if(!r.ok) throw await aiErr(r, prov);
+    const body=JSON.stringify({ contents:[{role:'user', parts}], generationConfig:{ responseMimeType:'application/json', temperature:0.2, maxOutputTokens:8192 } });
+    const chain=[model, ...GEMINI_CHAIN.filter(m=>m!==model)];
+    let lastErr=null; r=null;
+    for(let i=0;i<chain.length;i++){
+      if(i>0){ if(onStatus) onStatus('Gemini가 붐벼서 다른 모델로 다시 시도하는 중이에요'); await wait(1500, signal); }
+      const res=await aiFetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(chain[i])}:generateContent`,{ method:'POST', signal,
+        headers:{'content-type':'application/json','x-goog-api-key':key}, body });
+      if(res.ok){ r=res; break; }
+      const e=await aiErr(res, prov);
+      if(!['overloaded','rate_limited','bad_model'].includes(e.code)) throw e;
+      lastErr=e;
+    }
+    if(!r) throw lastErr;
     const j=await r.json();
     if(j.promptFeedback && j.promptFeedback.blockReason) throw {code:'refused'};
     const cand=(j.candidates||[])[0]; if(!cand) throw {code:'invalid_json'};
@@ -438,7 +450,7 @@ function errBase(code){
     case 'forbidden': return `이 키로는 ${n} API를 쓸 권한이 없어요. 키를 새로 만들어 주세요.`;
     case 'bad_model': return '선택한 모델을 쓸 수 없어요. 설정에서 다른 모델을 골라주세요.';
     case 'rate_limited': return '사용 한도에 잠깐 걸렸어요. 1분쯤 뒤에 다시 시도해 주세요.';
-    case 'overloaded': return `${n} 서버가 바빠요. 잠시 후 다시 시도해 주세요.`;
+    case 'overloaded': return '지금 Gemini 서버에 사용자가 몰려서 응답하지 못했어요. 앱 문제가 아니라 구글 쪽 일시적인 혼잡이에요. 다른 모델로도 다시 시도해 봤지만 모두 바빴어요. 몇 분 뒤 다시 분석을 눌러주세요.';
     case 'network': return '인터넷 연결을 확인하고 다시 시도해 주세요.';
     case 'refused': return 'AI가 이 내용을 분석하지 않았어요. 직접 적어주세요.';
     case 'bad_request': return '이 내용은 분석할 수 없었어요. 다른 이미지로 시도하거나 직접 적어주세요.';
@@ -531,7 +543,7 @@ function rowHTML(c, q){
   const u=thumbUrl(c);
   const th = u ? `<img src="${u}" alt="" loading="lazy">` : c.assetId ? ic(I.image,24) : ic(I.link,24);
   const sub = q ? (snippet((c.summary||[]).join(' '),q) || snippet(c.text,q) || esc((c.summary||[])[0]||'')) : esc((c.summary||[])[0] || (c.text||'').slice(0,80));
-  const meta=[c.source, folderName(c.folderId), relTime(c.createdAt)].filter(Boolean).join(' · ');
+  const meta=[c.needsAI?'정리 필요':'', c.source, folderName(c.folderId), relTime(c.createdAt)].filter(Boolean).join(' · ');
   return `<button class="row" data-act="open" data-id="${esc(c.id)}"><span class="thumb">${th}</span><span class="rbody"><span class="rt">${q?hl(c.title||'제목 없음',q):esc(c.title||'제목 없음')}</span><span class="rs">${sub}</span><span class="rm">${esc(meta)}</span></span></button>`;
 }
 function folderCards(){
@@ -562,6 +574,7 @@ function viewHome(){
   let h=`<div class="top"><div class="logo">${LOGO()}<span>캐치캐치</span></div><button class="iconbtn" data-act="go-settings" aria-label="설정">${ic(I.gear,20)}${hasAI()?'':'<span class="ping"></span>'}</button></div>
   <div><div class="eyebrow">${esc(date)}</div><h1 class="headline">${head}</h1></div>`;
   h+=dataErrHTML();
+  if(QUEUE.length){ const run=QUEUE.find(j=>j.status==='running'); h+=`<div class="pill" role="status">${SPIN(22)}<span>AI가 ${QUEUE.length}개를 정리하고 있어요${run&&run.statusMsg?' · '+esc(run.statusMsg):''}</span></div>`; }
   if(!hasAI() && !S.dataErr && !LS.get('cc_ai_skip_'+S.user.uid)){
     h+=`<div class="card"><h2>내 AI를 연결해 주세요</h2><p>캐치캐치는 각자 연결한 Gemini로 캡처를 읽고 정리해요. 구글 계정만 있으면 무료로, 2분이면 연결할 수 있어요.</p><div class="actions"><button class="btn sm outline" data-act="ai-skip">나중에</button><button class="btn sm" data-act="go-ai">${ic(I.spark,18)}AI 연결하기</button></div></div>`;
   }
@@ -601,6 +614,9 @@ function viewDetail(){
     if(FULL[c.assetId]===undefined) setTimeout(()=>loadFull(c.assetId),0);
     const u=FULL[c.assetId] || thumbUrl(c);
     h+= u ? `<div class="shot"><img src="${u}" alt="${esc(c.title||'캡처')} 원본 이미지"></div>` : `<div class="shot">${SPIN(32)}</div>`;
+  }
+  if(c.needsAI && !S.edit){
+    h+=`<div class="card"><h2>AI가 아직 정리하지 못했어요</h2>${c.aiError?`<p>${esc(c.aiError)}</p>`:''}${hasAI()?`<button class="btn sm" data-act="reai" ${S.reai?'disabled':''} style="align-self:flex-start">${S.reai?SPIN(18)+(esc(S.reaiMsg)||'정리하는 중…'):ic(I.spark,18)+'AI로 다시 정리하기'}</button>`:`<button class="btn sm outline" data-act="go-ai" style="align-self:flex-start">내 AI 연결하기</button>`}</div>`;
   }
   if(S.edit){
     const e=S.edit;
@@ -722,6 +738,72 @@ function renderView(){
   if(S.view==='search') ts.setAttribute('aria-current','page'); else ts.removeAttribute('aria-current');
 }
 
+/* ---------- 바로 정리하기 (background queue) ---------- */
+const QUICK = () => LS.get('cc_quick')!=='0';
+const QUEUE=[]; let QRUN=false;
+function enqueue(job){ job.id=newId(); job.status='waiting'; QUEUE.push(job); renderView(); processQueue(); }
+async function processQueue(){
+  if(QRUN) return; const job=QUEUE.find(j=>j.status==='waiting'); if(!job) return;
+  QRUN=true; job.status='running'; renderView();
+  try{ await runJob(job); }catch(e){}
+  QUEUE.splice(QUEUE.indexOf(job),1); QRUN=false; renderView(); processQueue();
+}
+function buildFields(raw, job){
+  const arr=v=>Array.isArray(v)?v.map(x=>String(x).trim()).filter(Boolean):(typeof v==='string'&&v?v.split('\n').map(x=>x.trim()).filter(Boolean):[]);
+  const host=u=>{ try{ return new URL(u).hostname; }catch(e){ return ''; } };
+  const link=String(raw.link||job.url||'').trim();
+  const title=raw.title ? String(raw.title).slice(0,80) : (job.kind==='link' ? ((job.memo||'').split('\n')[0].slice(0,40) || host(job.url) || '저장한 링크') : `캡처 ${fmtDate(now())}`);
+  const aiFolderId = raw.folderId && folderOf(String(raw.folderId)) ? String(raw.folderId) : '';
+  return { title, summary:arr(raw.summary).slice(0,6), tags:arr(raw.tags).map(t=>t.replace(/^#/,'')).slice(0,8),
+    text:String(raw.text || (job.kind==='link' ? (job.memo||'') : '')).slice(0,20000), link, source:String(raw.source||guessSource(link)||'').slice(0,20),
+    aiFolderId, aiNew: !aiFolderId && raw.newFolder ? String(raw.newFolder).slice(0,20) : '' };
+}
+async function runJob(job){
+  let img=job.img||null;
+  if(job.kind==='image' && !img){ try{ img={full:await fullImage(job.file), thumb:await thumbImage(job.file)}; }catch(e){ toast('이미지를 읽지 못해 하나를 건너뛰었어요'); return; } }
+  const prompt = job.kind==='image' ? analyzePrompt('image') : analyzePrompt('link', `링크: ${job.url}\n메모/본문:\n${(job.memo||'').slice(0,8000)}`);
+  let raw=null, err=null;
+  try{ raw=await callAI(prompt, img?img.full:null, null, msg=>{ job.statusMsg=msg; renderView(); }); }catch(e){ err=e; }
+  const f=buildFields(raw||{}, job);
+  let folderId='';
+  if(raw){ folderId = f.aiFolderId || (f.aiNew ? addFolder(f.aiNew, true) : ''); }
+  let assetId=null;
+  if(img){ assetId=newId(); FULL[assetId]='data:image/jpeg;base64,'+img.full; write(FB.F.setDoc(ref('images',assetId), {data:img.full, mime:'image/jpeg', createdAt:now()})).catch(()=>{}); }
+  const t=now(), id=newId();
+  const doc={ type: job.kind==='image'?'capture':'link', assetId, thumb: img?img.thumb:'', title:f.title, summary:f.summary, tags:f.tags, text:f.text, link:f.link, source:f.source,
+    folderId, createdAt:t, updatedAt:t, needsAI: !raw, aiError: raw ? '' : errBase(err && err.code) };
+  S.caps.unshift(Object.assign({id}, doc));
+  write(FB.F.setDoc(ref('captures',id), doc)).catch(()=>{});
+  toast(raw ? `‘${f.title}’ → ${folderName(folderId)}에 정리했어요` : 'AI가 정리하지 못해 미분류에 넣었어요. 캡처를 열어 다시 정리할 수 있어요');
+}
+async function fullB64(assetId){
+  if(typeof FULL[assetId]==='string' && FULL[assetId]) return FULL[assetId].split(',')[1];
+  const snap=await FB.F.getDoc(ref('images',assetId)); if(!snap.exists()) return null;
+  FULL[assetId]=`data:${snap.data().mime||'image/jpeg'};base64,${snap.data().data}`; return snap.data().data;
+}
+async function reorganize(c){
+  S.reai=true; renderView();
+  try{
+    const img = c.assetId ? await fullB64(c.assetId) : null;
+    const job = img ? {kind:'image'} : {kind:'link', url:c.link, memo:c.text};
+    const prompt = img ? analyzePrompt('image') : analyzePrompt('link', `링크: ${c.link||''}\n메모/본문:\n${(c.text||'').slice(0,8000)}`);
+    const raw=await callAI(prompt, img, null, msg=>{ S.reaiMsg=msg; renderView(); });
+    const f=buildFields(raw, job);
+    let folderId=c.folderId; if(!folderOf(folderId)) folderId = f.aiFolderId || (f.aiNew ? addFolder(f.aiNew, true) : '');
+    const upd={ title:f.title, summary:f.summary, tags:f.tags, text:f.text||c.text||'', link:f.link||c.link||'', source:f.source||c.source||'', folderId, needsAI:false, aiError:'', updatedAt:now() };
+    Object.assign(c, upd); write(FB.F.updateDoc(ref('captures',c.id), upd)).catch(()=>{});
+    toast('AI가 정리했어요');
+  }catch(e){ toast(errBase(e && e.code)); }
+  S.reai=false; S.reaiMsg=''; renderView();
+}
+function handleFiles(list){
+  const files=[...list].filter(f=>/^image\//.test(f.type)); if(!files.length) return;
+  if(S.phase!=='ready'){ return; } if(S.dataErr){ toast('저장소 설정을 먼저 마쳐주세요'); return; }
+  const quick = QUICK() && hasAI() && (!S.add || S.add.phase==='pick');
+  if(quick){ files.forEach(f=>enqueue({kind:'image', file:f})); if(S.add) closeAdd(); toast(files.length>1 ? `AI가 ${files.length}개를 정리해서 저장할게요` : 'AI가 정리해서 저장할게요'); return; }
+  if(!S.add && !openAdd('capture')) return; setFile(files[0]);
+}
+
 /* ---------- add sheet ---------- */
 function openAdd(mode){
   if(S.phase!=='ready'){ return false; }
@@ -761,11 +843,11 @@ function analyzePrompt(kind, extra){
 }
 async function analyze(){
   const A=S.add; if(!A) return;
-  A.phase='thinking'; A.err=null; A.note=null; A.ctl=new AbortController(); renderSheet();
+  A.phase='thinking'; A.err=null; A.note=null; A.status=''; A.ctl=new AbortController(); renderSheet();
   const isImg = A.mode==='capture';
   const prompt = isImg ? analyzePrompt('image') : analyzePrompt('link', `링크: ${A.draft.url}\n메모/본문:\n${A.draft.memo.slice(0,8000)}`);
   try{
-    const r=await callAI(prompt, isImg && A.img ? A.img.full : null, A.ctl.signal);
+    const r=await callAI(prompt, isImg && A.img ? A.img.full : null, A.ctl.signal, msg=>{ if(S.add===A){ A.status=msg; renderSheet(); } });
     if(S.add!==A) return; toReview(r||{});
   }catch(e){
     if(S.add!==A) return;
@@ -795,10 +877,11 @@ function toReview(raw){
 }
 function sheetHTML(){
   const A=S.add;
-  let h=`<div class="panel" role="dialog" aria-modal="true" aria-labelledby="sh-t"><div class="grab"></div>
+  let h=`<div class="panel" role="dialog" aria-modal="true" aria-labelledby="sh-t">
   <div class="shead"><h2 id="sh-t">${A.mode==='link'?'링크 저장':'새 캡처'}</h2><button class="iconbtn bare" data-act="close-add" aria-label="닫기">${ic(I.close)}</button></div>`;
   if(A.phase==='pick'){
     h+=`<div class="seg" role="tablist"><button role="tab" aria-selected="${A.mode==='capture'}" data-act="mode" data-id="capture">캡처 이미지</button><button role="tab" aria-selected="${A.mode==='link'}" data-act="mode" data-id="link">링크</button></div>`;
+    if(hasAI()) h+=`<div class="section" style="gap:8px"><span class="flabel">저장 방식</span><div class="seg" role="tablist" aria-label="저장 방식"><button role="tab" aria-selected="${QUICK()}" data-act="quick" data-id="1">${ic(I.spark,16)}바로 정리하기</button><button role="tab" aria-selected="${!QUICK()}" data-act="quick" data-id="0">확인하고 저장</button></div><p class="hint">${QUICK()?'AI가 읽고 알맞은 폴더에 바로 저장해요. 기다리지 않아도 되고, 여러 장을 한 번에 골라도 돼요.':'AI가 정리한 내용을 보고 고친 뒤 저장해요.'}</p></div>`;
     if(A.err) h+=`<p class="note err">${esc(A.err)}</p>`;
     if(A.mode==='capture'){
       h+=`<div class="drop" id="drop">${LOGO(52,48)}<span>캡처 이미지를 고르면<br>${hasAI()?'AI가 글자를 읽고 요약해요':'제목과 요약을 붙여 저장해요'}</span><button class="btn pink" data-act="pick">${ic(I.image,20)}이미지 고르기</button><span class="hint">컴퓨터에서는 붙여넣기(Ctrl+V)나 끌어다 놓기도 돼요</span></div>`;
@@ -810,7 +893,7 @@ function sheetHTML(){
     return h+`</div>`;
   }
   if(A.phase==='thinking'){
-    return h+`<div class="thinking">${A.preview?`<span class="thumb" style="width:76px;height:96px;border-radius:16px;flex:none"><img src="${A.preview}" alt=""></span>`:''}${SPIN(56)}<p><b style="color:var(--ink)">${!A.img&&A.mode==='capture'?'이미지를 준비하고 있어요':`AI가 ${A.mode==='capture'?'캡처를 읽고':'내용을 정리하고'} 있어요`}</b><br>보통 5~20초 걸려요</p>${A.ctl?`<button class="btn sm outline" data-act="stop">${ic(I.stop,18)}멈추기</button>`:''}</div></div>`;
+    return h+`<div class="thinking">${A.preview?`<span class="thumb" style="width:76px;height:96px;border-radius:16px;flex:none"><img src="${A.preview}" alt=""></span>`:''}${SPIN(56)}<p><b style="color:var(--ink)">${!A.img&&A.mode==='capture'?'이미지를 준비하고 있어요':`AI가 ${A.mode==='capture'?'캡처를 읽고':'내용을 정리하고'} 있어요`}</b><br>${esc(A.status||'보통 5~20초 걸려요')}</p><div class="actions" style="justify-content:center"><button class="btn sm" data-act="to-quick">${ic(I.spark,18)}바로 정리로 맡기기</button>${A.ctl?`<button class="btn sm outline" data-act="stop">${ic(I.stop,18)}멈추기</button>`:''}</div><p class="hint">맡기면 창을 닫아도 AI가 정리해서 알맞은 폴더에 저장해요.</p></div></div>`;
   }
   if(A.phase==='saving') return h+`<div class="thinking">${SPIN(56)}<p>저장하는 중이에요</p></div></div>`;
   const d=A.draft;
@@ -844,7 +927,7 @@ function renderSheet(){ if(!S.add) return; paint($('#sheet'), sheetHTML()); cons
 function wireDrop(dz){
   dz.addEventListener('dragover',e=>{ e.preventDefault(); dz.classList.add('over'); });
   dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
-  dz.addEventListener('drop',e=>{ e.preventDefault(); dz.classList.remove('over'); const f=[...(e.dataTransfer?.files||[])].find(f=>f.type.startsWith('image/')); if(f) setFile(f); });
+  dz.addEventListener('drop',e=>{ e.preventDefault(); dz.classList.remove('over'); handleFiles(e.dataTransfer?.files||[]); });
 }
 function saveAdd(){
   const A=S.add; if(!A || !A.draft.title.trim()) return;
@@ -947,10 +1030,13 @@ document.addEventListener('click', async e=>{
     case 'go-ai': S.aiDraft=null; S.test=null; if(S.view!=='settings') go('settings'); setTimeout(()=>{ const c=$('#ai-card'); if(c) c.scrollIntoView({behavior:'smooth', block:'start'}); },60); break;
     case 'ai-skip': LS.set('cc_ai_skip_'+S.user.uid,'1'); renderView(); break;
     case 'ai-pick': S.aiDraft={provider:id, key:AIS.keys[id]||'', model:aiModel(id)}; S.test=null; renderView(); break;
-    case 'add': if(openAdd('capture')) $('#file').click(); break;
+    case 'add': if(openAdd('capture')){ $('#file').multiple=QUICK()&&hasAI(); $('#file').click(); } break;
+    case 'quick': LS.set('cc_quick', id); renderSheet(); break;
+    case 'to-quick': { const A=S.add; if(!A) break; const job = A.mode==='capture' ? {kind:'image', file:A.file, img:A.img} : {kind:'link', url:A.draft.url, memo:A.draft.memo}; A.ctl?.abort(); closeAdd(); enqueue(job); toast('AI가 정리해서 바로 저장할게요'); break; }
+    case 'reai': { const c=capOf(S.capId); if(c && !S.reai) reorganize(c); break; }
     case 'close-add': closeAdd(); break;
     case 'mode': S.add.mode=id; S.add.err=null; renderSheet(); break;
-    case 'pick': $('#file').click(); break;
+    case 'pick': $('#file').multiple = !!(QUICK()&&hasAI()&&S.add&&S.add.phase==='pick'); $('#file').click(); break;
     case 'stop': S.add?.ctl?.abort(); break;
     case 'reanalyze': if(S.add.mode==='capture' && !S.add.img) $('#file').click(); else analyze(); break;
     case 'choose': S.add.choice=id; renderSheet(); if(id==='new') setTimeout(()=>$('#f-new')?.focus(),0); break;
@@ -1004,7 +1090,9 @@ document.addEventListener('submit', async e=>{
   if(k==='key'){ const D=S.aiDraft; if(!D) return; const v=(D.key||'').trim(); if(!v){ toast('API 키를 붙여넣어 주세요'); return; }
     AIS.provider=D.provider; AIS.keys[D.provider]=v; AIS.models[D.provider]=D.model; aiSave(); S.test=null; renderView(); toast('연결했어요. 연결 테스트를 눌러 확인해 보세요'); return; }
   if(k==='link'){ const d=S.add.draft; if(!safeLink(d.url)){ S.add.err='https://로 시작하는 링크를 넣어주세요.'; renderSheet(); return; }
-    S.add.err=null; if(hasAI()) analyze(); else { S.add.note=errCopy('no_key'); toReview({}); } return; }
+    S.add.err=null;
+    if(hasAI() && QUICK()){ enqueue({kind:'link', url:d.url.trim(), memo:d.memo}); closeAdd(); toast('AI가 정리해서 저장할게요'); return; }
+    if(hasAI()) analyze(); else { S.add.note=errCopy('no_key'); toReview({}); } return; }
   if(k==='save'){ saveAdd(); return; }
   if(k==='newfolder'){ const name=(S.newFolder||'').trim(); if(!name) return;
     if(S.folders.some(x=>x.name===name)){ toast('같은 이름의 폴더가 있어요'); return; }
@@ -1030,15 +1118,17 @@ document.addEventListener('change', e=>{
     write(FB.F.updateDoc(ref('captures',c.id), {folderId:v, updatedAt:now()})).catch(()=>{}); toast(`‘${folderName(v)}’로 옮겼어요`); }
   if(ch==='ai-model' && S.aiDraft){ S.aiDraft.model=e.target.value; if(AIS.keys[S.aiDraft.provider] && AIS.provider===S.aiDraft.provider){ AIS.models[S.aiDraft.provider]=e.target.value; aiSave(); S.test=null; toast('모델을 바꿨어요'); } }
 });
-$('#file').addEventListener('change', e=>{ const f=e.target.files && e.target.files[0]; e.target.value=''; if(!f) return; if(!S.add && !openAdd('capture')) return; setFile(f); });
+$('#file').addEventListener('change', e=>{ const files=[...(e.target.files||[])]; e.target.value=''; handleFiles(files); });
 $('#backup-file').addEventListener('change', e=>{ const f=e.target.files && e.target.files[0]; e.target.value=''; if(f) restore(f); });
 document.addEventListener('paste', e=>{
   if(S.phase!=='ready') return;
-  const f=[...(e.clipboardData?.files||[])].find(x=>x.type.startsWith('image/')); if(!f) return;
-  e.preventDefault(); if(!S.add && !openAdd('capture')) return; setFile(f);
+  const files=[...(e.clipboardData?.files||[])].filter(x=>x.type.startsWith('image/')); if(!files.length) return;
+  e.preventDefault(); handleFiles(files);
 });
 document.addEventListener('keydown', e=>{ if(e.key==='Escape' && S.add && S.add.phase!=='saving') closeAdd(); });
 $('#sheet').addEventListener('click', e=>{ if(e.target.id==='sheet' && S.add && S.add.phase!=='saving') closeAdd(); });
+
+window.addEventListener('beforeunload', e=>{ if(QUEUE.length){ e.preventDefault(); e.returnValue=''; } });
 
 /* ---------- boot ---------- */
 async function start(){
