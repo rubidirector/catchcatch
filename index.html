@@ -70,6 +70,13 @@ body.gate .tabbar{display:none}
 .fcard.picked{border:1.5px solid var(--ink)}
 .fchk{width:22px;height:22px;border-radius:11px;border:1.5px solid var(--mute);display:flex;align-items:center;justify-content:center;color:var(--bg)}
 .fchk.on{background:var(--ink);border-color:var(--ink)}
+.fchk{flex:none}
+.fcard > span:only-child{margin-top:auto}
+.row.picked{background:var(--surface)}
+.row .fchk{margin-left:4px}
+.thumb img{-webkit-touch-callout:none;pointer-events:none}
+.row{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.selbar{position:sticky;bottom:12px;box-shadow:0 10px 30px rgba(0,0,0,.12)}
 .fcard.add{background:transparent;border:1px solid var(--line);color:var(--mute);justify-content:center;align-items:center;flex-direction:row;gap:8px}
 .fcard.form{grid-column:1/-1;cursor:default;background:var(--surface);min-height:0}
 .badge{align-self:flex-start;font-family:var(--mono);font-size:10px;font-weight:500;padding:3px 8px;border-radius:10px;background:var(--pink);color:var(--on-pink);white-space:nowrap}
@@ -282,7 +289,7 @@ const SPIN = n => `<svg class="spinner" width="${n}" height="${n}" viewBox="0 0 
 
 const S = { ready:false, user:null, folders:[], caps:[], view:'home', stack:[], folderId:null, capId:null,
   q:'', filter:'all', tab:'summary', edit:null, confirmDel:false, newFolder:null, rename:null, confirmFolderDel:false,
-  ask:null, add:null, aiDraft:null, test:null, confirmLogout:false, loginErr:'', dataErr:'', busy:'', loggingIn:false, migrate:0, reai:false, reaiMsg:'', selMode:false, sel:new Set(), confirmBulk:false };
+  ask:null, add:null, aiDraft:null, test:null, confirmLogout:false, loginErr:'', dataErr:'', busy:'', loggingIn:false, migrate:0, reai:false, reaiMsg:'', selMode:false, sel:new Set(), confirmBulk:false, capSelMode:false, capSel:new Set(), confirmCapDel:false, move:null };
 const LS = { get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }, set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }, del(k){ try{ localStorage.removeItem(k); }catch(e){} } };
 const now = () => Date.now();
 const newId = () => (crypto.randomUUID ? crypto.randomUUID().replace(/-/g,'') : Date.now().toString(36)+Math.random().toString(36).slice(2));
@@ -568,29 +575,31 @@ function buildFields(raw, base){
 }
 
 /* ============ navigation ============ */
-function go(view, extra){ S.stack.push({view:S.view, folderId:S.folderId, capId:S.capId}); Object.assign(S, {view, edit:null, confirmDel:false, rename:null, confirmFolderDel:false, confirmLogout:false}, extra||{}); if(view==='detail') S.tab='summary'; renderView(); toTop(); }
-function back(){ const p=S.stack.pop() || {view:'home'}; Object.assign(S, p, {edit:null, confirmDel:false, rename:null, confirmFolderDel:false}); renderView(); toTop(); }
+function go(view, extra){ S.capSelMode=false; S.capSel=new Set(); S.confirmCapDel=false; S.stack.push({view:S.view, folderId:S.folderId, capId:S.capId}); Object.assign(S, {view, edit:null, confirmDel:false, rename:null, confirmFolderDel:false, confirmLogout:false}, extra||{}); if(view==='detail') S.tab='summary'; renderView(); toTop(); }
+function back(){ S.capSelMode=false; S.capSel=new Set(); S.confirmCapDel=false; const p=S.stack.pop() || {view:'home'}; Object.assign(S, p, {edit:null, confirmDel:false, rename:null, confirmFolderDel:false}); renderView(); toTop(); }
 function home(){ S.stack=[]; S.view='home'; renderView(); toTop(); }
 
 /* ============ views ============ */
 function footer(){ return `<div class="foot">${LOGO(18)}</div>`; }
-function rowHTML(c, q){
+function rowHTML(c, q, sel){
   const u=thumbUrl(c);
   const th = u ? `<img src="${u}" alt="" loading="lazy">` : c.assetId ? ic(I.image,24) : ic(I.link,24);
   const sub = q ? (snippet((c.summary||[]).join(' '),q) || snippet(c.text,q) || esc((c.summary||[])[0]||'')) : esc((c.summary||[])[0] || (c.text||'').slice(0,80));
   const meta=[c.needsAI?'정리 필요':'', c.source, folderName(c.folderId), relTime(c.createdAt)].filter(Boolean).join(' · ');
-  return `<button class="row" data-act="open" data-id="${esc(c.id)}"><span class="thumb">${th}</span><span class="rbody"><span class="rt">${q?hl(c.title||'제목 없음',q):esc(c.title||'제목 없음')}</span><span class="rs">${sub}</span><span class="rm">${esc(meta)}</span></span></button>`;
+  const on = sel && S.capSel.has(c.id);
+  const chk = sel ? `<span class="fchk ${on?'on':''}" aria-hidden="true">${on?ic('<path d="M6 12.5 L10 16.5 L18 8"/>',16):''}</span>` : '';
+  return `<button class="row ${on?'picked':''}" data-act="${sel?'csel':'open'}" data-id="${esc(c.id)}" ${sel?`aria-pressed="${on}"`:''}>${chk}<span class="thumb">${th}</span><span class="rbody"><span class="rt">${q?hl(c.title||'제목 없음',q):esc(c.title||'제목 없음')}</span><span class="rs">${sub}</span><span class="rm">${esc(meta)}</span></span></button>`;
 }
 function folderCards(){
   let h='';
   const sel=S.selMode;
   for(const f of S.folders){
     const on=sel && S.sel.has(f.id);
-    const mark = sel ? `<span class="fchk ${on?'on':''}" aria-hidden="true">${on?ic('<path d="M6 12.5 L10 16.5 L18 8"/>',16):''}</span>` : '<span class="dot"></span>';
+    const mark = sel ? `<span class="fchk ${on?'on':''}" aria-hidden="true">${on?ic('<path d="M6 12.5 L10 16.5 L18 8"/>',16):''}</span>` : '';
     h+=`<button class="fcard ${on?'picked':''}" data-act="${sel?'fsel':'folder'}" data-id="${esc(f.id)}" ${sel?`aria-pressed="${on}"`:''}>${mark}<span><span class="fname">${esc(f.name)}</span><br><span class="fcount">${countIn(f.id)}개</span></span></button>`;
   }
   const none=countIn('_none');
-  if(none && !sel) h+=`<button class="fcard" data-act="folder" data-id="_none"><span class="dot pink"></span><span><span class="fname">미분류</span><br><span class="fcount">${none}개</span></span></button>`;
+  if(none && !sel) h+=`<button class="fcard" data-act="folder" data-id="_none"><span><span class="fname">미분류</span><br><span class="fcount">${none}개</span></span></button>`;
   if(sel) return h;
   if(S.newFolder!==null) h+=`<form class="fcard form" data-form="newfolder"><div class="field"><label for="nf-name">새 폴더 이름</label><input id="nf-name" class="inp" maxlength="20" data-bind="newFolder" value="${esc(S.newFolder)}" placeholder="예: 디자인 레퍼런스" autocomplete="off"></div><div class="actions"><button type="button" class="btn sm outline" data-act="newfolder-cancel">취소</button><button class="btn sm">만들기</button></div></form>`;
   else h+=`<button class="fcard add" data-act="newfolder">${ic(I.plus,18)}새 폴더</button>`;
@@ -639,7 +648,8 @@ function viewFolder(){
   const id=S.folderId, f=folderOf(id); if(id!=='_none' && !f){ S.view='home'; return viewHome(); }
   const list=S.caps.filter(c=> id==='_none' ? !folderOf(c.folderId) : c.folderId===id);
   const name=f ? f.name : '미분류';
-  let h=`<div class="top"><button class="iconbtn bare" data-act="back" aria-label="뒤로">${ic(I.back)}</button>${f?`<button class="textbtn" data-act="rename">이름 바꾸기</button>`:''}</div>`;
+  const sm=S.capSelMode;
+  let h=`<div class="top"><button class="iconbtn bare" data-act="back" aria-label="뒤로">${ic(I.back)}</button><div style="display:flex;gap:4px">${list.length?`<button class="textbtn" data-act="${sm?'csel-done':'csel-start'}">${sm?'완료':'선택'}</button>`:''}${f&&!sm?`<button class="textbtn" data-act="rename">이름 바꾸기</button>`:''}</div></div>`;
   if(S.rename!==null) h+=`<form class="section" data-form="rename"><div class="field"><label for="rn-name">폴더 이름</label><input id="rn-name" class="inp" maxlength="20" data-bind="rename" value="${esc(S.rename)}" autocomplete="off"></div><div class="actions"><button type="button" class="btn sm outline" data-act="rename-cancel">취소</button><button class="btn sm">저장</button></div></form>`;
   else h+=`<div><div class="eyebrow">폴더 · ${list.length}개</div><h1 class="headline">${esc(name)}</h1></div>`;
   if(!list.length){
@@ -647,7 +657,17 @@ function viewFolder(){
     if(f) h+= S.confirmFolderDel
       ? `<div class="confirm"><p>‘${esc(name)}’ 폴더를 삭제할까요?</p><div class="actions"><button class="btn sm outline" data-act="folder-del-cancel">취소</button><button class="btn sm danger" data-act="folder-del-yes">삭제</button></div></div>`
       : `<button class="textbtn danger" data-act="folder-del">폴더 삭제</button>`;
-  } else h+=`<div class="list">${list.map(c=>rowHTML(c)).join('')}</div><button class="btn outline wide" data-act="export-folder">${ic(I.down,20)}폴더 전체 요약 파일로 저장</button>`;
+  } else {
+    h+=`<div class="list">${list.map(c=>rowHTML(c,'',sm)).join('')}</div>`;
+    if(sm){
+      const n=S.capSel.size;
+      h+= S.confirmCapDel
+        ? `<div class="confirm"><p>캡처 ${n}개를 삭제할까요? 이미지와 요약이 모두 지워져요.</p><div class="actions"><button class="btn sm outline" data-act="cdel-cancel">취소</button><button class="btn sm danger" data-act="cdel-yes">삭제</button></div></div>`
+        : `<div class="banner selbar"><p>${n?`<b>${n}개</b> 선택했어요`:'캡처를 눌러 선택하세요'}</p><button class="btn sm outline" data-act="csel-all">${n===list.length?'선택 해제':'모두 선택'}</button><button class="btn sm outline" data-act="cmove" ${n?'':'disabled'}>폴더 이동</button><button class="btn sm danger" data-act="cdel-ask" ${n?'':'disabled'}>${ic(I.trash,18)}삭제</button></div>`;
+    } else {
+      h+=`<p class="hint" style="text-align:center">캡처를 꾹 누르면 다른 폴더로 옮길 수 있어요</p><button class="btn outline wide" data-act="export-folder">${ic(I.down,20)}폴더 전체 요약 파일로 저장</button>`;
+    }
+  }
   return h;
 }
 function viewDetail(){
@@ -889,7 +909,29 @@ function folderOpts(){
   return h;
 }
 function saveLabel(){ const A=S.add; const n = A.choice==='aiNew' ? A.aiNew : A.choice==='new' ? (A.newName.trim()||'새 폴더') : folderName(A.choice); return `‘${n}’에 저장하기`; }
-function renderSheet(){ if(!S.add) return; paint($('#sheet'), sheetHTML()); const dz=$('#drop'); if(dz) wireDrop(dz); }
+function openMove(ids){
+  ids=ids.filter(id=>capOf(id)); if(!ids.length) return;
+  if(S.add) closeAdd();
+  S.move={ids, newName:''}; $('#sheet').hidden=false; renderSheet();
+}
+function closeMove(){ if(!S.move) return; S.move=null; $('#sheet').hidden=true; }
+function moveHTML(){
+  const M=S.move, items=M.ids.map(capOf).filter(Boolean), one=items.length===1, cur=one ? (folderOf(items[0].folderId)?items[0].folderId:'') : null;
+  const opt=(id,name,desc)=>`<button type="button" class="opt" role="radio" aria-checked="${cur===id}" data-act="mv-pick" data-id="${esc(id)}"><span class="radio"></span><span class="obody"><span class="oname">${esc(name)}</span><span class="odesc">${esc(desc)}</span></span>${cur===id?'<span class="badge plain">지금 폴더</span>':''}</button>`;
+  return `<div class="panel" role="dialog" aria-modal="true" aria-labelledby="mv-t">
+    <div class="shead"><h2 id="mv-t">${one?'다른 폴더로 옮기기':`캡처 ${items.length}개 옮기기`}</h2><button class="iconbtn bare" data-act="close-move" aria-label="닫기">${ic(I.close)}</button></div>
+    ${one?`<div class="pv"><span class="thumb">${thumbUrl(items[0])?`<img src="${thumbUrl(items[0])}" alt="">`:ic(I.image,24)}</span><div class="rbody"><span class="rt">${esc(items[0].title||'제목 없음')}</span><span class="hint">지금: ${esc(folderName(items[0].folderId))}</span></div></div>`:''}
+    <div class="opts" role="radiogroup" aria-label="옮길 폴더">${S.folders.map(f=>opt(f.id, f.name, `캡처 ${countIn(f.id)}개`)).join('')}${opt('', '미분류', '폴더 없이 두기')}</div>
+    <form class="section" data-form="mvnew" style="gap:8px"><div class="field"><label for="mv-new">새 폴더 만들어서 옮기기</label><input id="mv-new" class="inp" maxlength="20" data-bind="move.newName" value="${esc(M.newName)}" placeholder="새 폴더 이름" autocomplete="off"></div><button class="btn sm outline" style="align-self:flex-start">만들고 옮기기</button></form>
+  </div>`;
+}
+function doMove(folderId){
+  const M=S.move; if(!M) return; const t=now(); let n=0;
+  for(const id of M.ids){ const c=capOf(id); if(!c || c.folderId===folderId) continue; c.folderId=folderId; n++; write(DB.update('captures', id, {folderId, updatedAt:t})).catch(()=>{}); }
+  closeMove(); S.capSelMode=false; S.capSel=new Set(); S.confirmCapDel=false; renderView();
+  toast(n ? `${n>1?`캡처 ${n}개를 `:''}‘${folderName(folderId)}’로 옮겼어요` : '이미 그 폴더에 있어요');
+}
+function renderSheet(){ if(S.move){ paint($('#sheet'), moveHTML()); return; } if(!S.add) return; paint($('#sheet'), sheetHTML()); const dz=$('#drop'); if(dz) wireDrop(dz); }
 function wireDrop(dz){
   dz.addEventListener('dragover',e=>{ e.preventDefault(); dz.classList.add('over'); });
   dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
@@ -996,7 +1038,7 @@ const TOUR_STEPS=[
   {t:'캐치캐치에 오신 걸 환영해요', d:'트위터·인스타에서 찍어둔 캡처를 AI가 읽고 정리해 두는 보관함이에요. 어떻게 쓰는지 짧게 보여드릴게요.'},
   {sel:'#tab-add', t:'캡처 올리기', d:'가운데 분홍 버튼으로 캡처나 링크를 올려요. AI가 글자를 읽고 제목·요약·태그를 붙여줘요.'},
   {sel:'#tab-add', t:'저장 전에 고칠 수 있어요', d:'AI가 정리한 내용과 추천 폴더를 창에서 확인하고, 마음에 들게 고친 뒤 저장해요.'},
-  {sel:'#folders-sec', t:'폴더로 모아보기', d:'AI가 알맞은 폴더를 추천하거나 새로 만들어줘요. 직접 폴더를 만들 수도 있어요.'},
+  {sel:'#folders-sec', t:'폴더로 모아보기', d:'AI가 알맞은 폴더를 추천하거나 새로 만들어줘요. 캡처를 꾹 누르면 다른 폴더로 옮길 수 있고, 선택으로 여러 개를 한 번에 지울 수도 있어요.'},
   {sel:'#searchbar', t:'이미지 속 글자까지 검색', d:'기억나는 단어만 입력하면 캡처 속 글자까지 찾아줘요. AI에게 질문할 수도 있어요.'},
   {sel:'#gear', t:'내 AI 연결하기', d:'설정에서 무료 Gemini 키를 넣으면 AI 정리가 켜져요. 로그인하지 않아도 쓸 수 있어요.'},
   {sel:'#gear', t:'로그인하면 안전하게', d:'로그인하지 않으면 이 기기에만 저장돼요. 설정에서 구글로 로그인하면 계정에 보관되고 다른 기기에서도 보여요.'}
@@ -1050,6 +1092,17 @@ document.addEventListener('click', async e=>{
     case 'go-ai': S.aiDraft=null; S.test=null; if(S.view!=='settings') go('settings'); setTimeout(()=>{ const c=$('#ai-card'); if(c) c.scrollIntoView({behavior:'smooth', block:'start'}); },60); break;
     case 'add': openAdd('capture'); break;
     case 'close-add': closeAdd(); break;
+    case 'close-move': closeMove(); break;
+    case 'mv-pick': doMove(id||''); break;
+    case 'csel-start': S.capSelMode=true; S.capSel=new Set(); S.confirmCapDel=false; S.rename=null; renderView(); break;
+    case 'csel-done': S.capSelMode=false; S.capSel=new Set(); S.confirmCapDel=false; renderView(); break;
+    case 'csel': if(S.capSel.has(id)) S.capSel.delete(id); else S.capSel.add(id); S.confirmCapDel=false; renderView(); break;
+    case 'csel-all': { const list=S.caps.filter(c=> S.folderId==='_none' ? !folderOf(c.folderId) : c.folderId===S.folderId); S.capSel = S.capSel.size===list.length ? new Set() : new Set(list.map(c=>c.id)); S.confirmCapDel=false; renderView(); break; }
+    case 'cmove': if(S.capSel.size) openMove([...S.capSel]); break;
+    case 'cdel-ask': if(S.capSel.size){ S.confirmCapDel=true; renderView(); } break;
+    case 'cdel-cancel': S.confirmCapDel=false; renderView(); break;
+    case 'cdel-yes': { let n=0; for(const id of S.capSel){ const c=capOf(id); if(!c) continue; write(DB.del('captures', c.id)).catch(()=>{}); if(c.assetId){ write(DB.del('images', c.assetId)).catch(()=>{}); delete FULL[c.assetId]; } n++; }
+      S.caps=S.caps.filter(c=>!S.capSel.has(c.id)); S.capSelMode=false; S.capSel=new Set(); S.confirmCapDel=false; renderView(); toast(`캡처 ${n}개를 삭제했어요`); break; }
     case 'mode': S.add.mode=id; S.add.err=null; renderSheet(); break;
     case 'pick': $('#file').multiple=false; $('#file').click(); break;
     case 'stop': S.add?.ctl?.abort(); break;
@@ -1120,6 +1173,7 @@ document.addEventListener('submit', e=>{
   if(k==='link'){ const d=S.add.draft; if(!safeLink(d.url)){ S.add.err='https://로 시작하는 링크를 넣어주세요.'; renderSheet(); return; }
     S.add.err=null; if(hasAI()) analyze(); else { S.add.note=errCopy('no_key'); toReview({}); } return; }
   if(k==='save'){ saveAdd(); return; }
+  if(k==='mvnew'){ const name=(S.move?.newName||'').trim(); if(!name){ toast('새 폴더 이름을 적어주세요'); return; } doMove(addFolder(name,false)); return; }
   if(k==='newfolder'){ const name=(S.newFolder||'').trim(); if(!name) return;
     if(S.folders.some(x=>x.name===name)){ toast('같은 이름의 폴더가 있어요'); return; }
     addFolder(name,false); S.newFolder=null; renderView(); toast('폴더를 만들었어요'); return; }
@@ -1150,8 +1204,19 @@ document.addEventListener('paste', e=>{
   const f=[...(e.clipboardData?.files||[])].find(x=>x.type.startsWith('image/')); if(!f) return;
   e.preventDefault(); if(!S.add && !openAdd('capture')) return; setFile(f);
 });
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ if(TOUR.on) endTour(); else if(S.add) closeAdd(); } });
-$('#sheet').addEventListener('click', e=>{ if(e.target.id==='sheet' && S.add) closeAdd(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ if(TOUR.on) endTour(); else if(S.move) closeMove(); else if(S.add) closeAdd(); } });
+$('#sheet').addEventListener('click', e=>{ if(e.target.id!=='sheet') return; if(S.move) closeMove(); else if(S.add) closeAdd(); });
+/* long press (or right click) on a capture → move it to another folder */
+let lp=null, lpFired=false;
+document.addEventListener('pointerdown', e=>{
+  const row=e.target.closest('.row[data-act="open"]'); if(!row || (e.pointerType==='mouse' && e.button!==0)) return;
+  lpFired=false; if(lp) clearTimeout(lp.t);
+  lp={x:e.clientX, y:e.clientY, t:setTimeout(()=>{ lpFired=true; lp=null; try{ navigator.vibrate && navigator.vibrate(12); }catch(_){} openMove([row.dataset.id]); }, 480)};
+});
+document.addEventListener('pointermove', e=>{ if(lp && (Math.abs(e.clientX-lp.x)>10 || Math.abs(e.clientY-lp.y)>10)){ clearTimeout(lp.t); lp=null; } });
+['pointerup','pointercancel'].forEach(t=>document.addEventListener(t, ()=>{ if(lp){ clearTimeout(lp.t); lp=null; } if(lpFired) setTimeout(()=>{ lpFired=false; }, 400); }));
+document.addEventListener('click', e=>{ if(lpFired){ lpFired=false; e.preventDefault(); e.stopPropagation(); } }, true);
+document.addEventListener('contextmenu', e=>{ const row=e.target.closest('.row[data-act="open"]'); if(!row) return; e.preventDefault(); if(!S.move) openMove([row.dataset.id]); });
 ['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t, e=>e.preventDefault(), {passive:false}));
 document.addEventListener('touchmove', e=>{ if(e.touches && e.touches.length>1) e.preventDefault(); }, {passive:false});
 
