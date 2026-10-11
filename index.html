@@ -225,7 +225,7 @@ const FIREBASE_CONFIG = {
 */
 
 (function(){
-const VERSION = 'v4.0';
+const VERSION = 'v4.1';
 const FB_VER = '10.12.2';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -382,17 +382,7 @@ const PROVIDERS = {
     models:[['gemini-3.8-flash','Gemini 3.8 Flash · 글자를 더 정확히 읽어요'],['gemini-3.5-flash-lite','Gemini 3.5 Flash-Lite · 더 빨라요']],
     keyUrl:'https://aistudio.google.com/app/apikey', keyHint:'AIza...',
     steps:['아래 링크로 Google AI Studio를 열고 구글 계정으로 로그인해요.','<b>API 키 만들기</b>를 눌러요. 프로젝트가 없다고 나오면 화면에서 <b>프로젝트 만들기</b>를 먼저 눌러요.','<b>AIza</b>로 시작하는 키를 복사해서 아래 칸에 붙여넣어요.'],
-    note:'무료 키로 보낸 캡처는 구글이 서비스 개선에 쓸 수 있어요.' },
-  openai:{ name:'ChatGPT', tag:'유료', desc:'OpenAI API 크레딧을 충전해야 써요 (ChatGPT 구독과 별개)',
-    models:[['gpt-6-luna','GPT-6 Luna · 저렴하고 빨라요'],['gpt-6.1-sol','GPT-6.1 Sol · 더 정확해요']],
-    keyUrl:'https://platform.openai.com/api-keys', keyHint:'sk-...',
-    steps:['아래 링크로 OpenAI 플랫폼을 열고 로그인해요.','<b>Billing</b>에서 크레딧을 충전해요. ChatGPT 구독과는 따로 결제돼요.','<b>Create new secret key</b>로 만든 키(sk-…)를 복사해 아래 칸에 붙여넣어요.'],
-    note:'쓴 만큼 OpenAI 크레딧에서 빠져나가요.' },
-  claude:{ name:'Claude', tag:'유료', desc:'Claude API 크레딧을 충전해야 써요 (Claude 구독과 별개)',
-    models:[['claude-haiku-5-5','Claude Haiku 5.5 · 저렴하고 빨라요'],['claude-sonnet-5-5','Claude Sonnet 5.5 · 더 정확해요']],
-    keyUrl:'https://platform.claude.com/settings/keys', keyHint:'sk-ant-...',
-    steps:['아래 링크로 Claude Console을 열고 로그인해요.','왼쪽 아래 <b>크레딧 → 잔액 충전</b>에서 크레딧을 넣어요. Claude 구독과는 따로 결제돼요.','<b>키 생성</b>에서 <b>워크스페이스 키</b>로 만든 키(sk-ant-…)를 복사해 아래 칸에 붙여넣어요.'],
-    note:'쓴 만큼 Claude API 크레딧에서 빠져나가요.' }
+    note:'무료 키로 보낸 캡처는 구글이 서비스 개선에 쓸 수 있어요.' }
 };
 let AIS = {provider:'gemini', keys:{}, models:{}};
 const aiLSKey = () => S.user ? 'cc_ai_'+S.user.uid : '';
@@ -435,25 +425,7 @@ async function callAI(text, imgB64, signal){
     if(cand.finishReason==='SAFETY' || cand.finishReason==='PROHIBITED_CONTENT') throw {code:'refused'};
     return parseJSONText((cand.content?.parts||[]).filter(p=>p.text && !p.thought).map(p=>p.text).join(''));
   }
-  if(prov==='openai'){
-    const content=[{type:'input_text', text}]; if(imgB64) content.push({type:'input_image', image_url:'data:image/jpeg;base64,'+imgB64});
-    r=await aiFetch('https://api.openai.com/v1/responses',{ method:'POST', signal,
-      headers:{'content-type':'application/json','authorization':'Bearer '+key},
-      body:JSON.stringify({ model, input:[{role:'user', content}], max_output_tokens:8192 }) });
-    if(!r.ok) throw await aiErr(r, prov);
-    const j=await r.json();
-    const t = typeof j.output_text==='string' ? j.output_text : (j.output||[]).flatMap(o=>o.content||[]).filter(c=>c.type==='output_text' && c.text).map(c=>c.text).join('');
-    if(!t && (j.output||[]).some(o=>(o.content||[]).some(c=>c.type==='refusal'))) throw {code:'refused'};
-    return parseJSONText(t);
-  }
-  const content=[]; if(imgB64) content.push({type:'image', source:{type:'base64', media_type:'image/jpeg', data:imgB64}}); content.push({type:'text', text});
-  r=await aiFetch('https://api.anthropic.com/v1/messages',{ method:'POST', signal,
-    headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-    body:JSON.stringify({ model, max_tokens:8192, messages:[{role:'user', content}] }) });
-  if(!r.ok) throw await aiErr(r, prov);
-  const j=await r.json();
-  if(j.stop_reason==='refusal') throw {code:'refused'};
-  return parseJSONText((j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join(''));
+  throw {code:'no_key'};
 }
 function errCopy(code, detail){ const base=errBase(code); return detail && !['no_key','cancelled'].includes(code) ? `${base}\n오류 내용: ${detail}` : base; }
 function errBase(code){
@@ -461,8 +433,7 @@ function errBase(code){
   switch(code){
     case 'no_key': return '설정에서 내 AI를 연결하면 자동으로 정리해요. 지금은 직접 적을 수 있어요.';
     case 'bad_key': return `${n} API 키가 맞지 않아요. 설정에서 키를 다시 붙여넣어 주세요.`;
-    case 'no_credit': return `${n} API 크레딧이 없어요. 충전해야 쓸 수 있어요. 무료로 쓰려면 설정에서 Gemini를 연결하세요.`;
-    case 'need_ws': return 'Claude 키가 워크스페이스 키가 아니에요. Claude Console에서 워크스페이스 키로 새로 만들어 주세요.';
+    case 'no_credit': return '이 키의 프로젝트에 결제가 연결돼 무료 한도가 꺼져 있어요. AI Studio에서 결제 없는 프로젝트로 키를 새로 만들어 주세요.';
     case 'region': return `지금 위치에서는 ${n} API를 쓸 수 없다고 나와요.`;
     case 'forbidden': return `이 키로는 ${n} API를 쓸 권한이 없어요. 키를 새로 만들어 주세요.`;
     case 'bad_model': return '선택한 모델을 쓸 수 없어요. 설정에서 다른 모델을 골라주세요.';
@@ -592,7 +563,7 @@ function viewHome(){
   <div><div class="eyebrow">${esc(date)}</div><h1 class="headline">${head}</h1></div>`;
   h+=dataErrHTML();
   if(!hasAI() && !S.dataErr && !LS.get('cc_ai_skip_'+S.user.uid)){
-    h+=`<div class="card"><h2>내 AI를 연결해 주세요</h2><p>캐치캐치는 각자 연결한 AI로 캡처를 읽고 정리해요. 무료로 쓸 수 있는 Gemini를 추천해요. 구글 계정만 있으면 2분이면 끝나요.</p><div class="actions"><button class="btn sm outline" data-act="ai-skip">나중에</button><button class="btn sm" data-act="go-ai">${ic(I.spark,18)}AI 연결하기</button></div></div>`;
+    h+=`<div class="card"><h2>내 AI를 연결해 주세요</h2><p>캐치캐치는 각자 연결한 Gemini로 캡처를 읽고 정리해요. 구글 계정만 있으면 무료로, 2분이면 연결할 수 있어요.</p><div class="actions"><button class="btn sm outline" data-act="ai-skip">나중에</button><button class="btn sm" data-act="go-ai">${ic(I.spark,18)}AI 연결하기</button></div></div>`;
   }
   h+=`<button class="searchbar" data-act="go-search">${ic(I.search,20)}캡처 속 글자까지 검색</button>`;
   if(!n && !S.folders.length && !S.dataErr){
@@ -701,17 +672,15 @@ function viewSearch(){
 function aiCard(){
   if(!S.aiDraft) S.aiDraft={provider:aiProv(), key:AIS.keys[aiProv()]||'', model:aiModel(aiProv())};
   const D=S.aiDraft, P=PROVIDERS[D.provider], saved=!!AIS.keys[D.provider], active=saved && AIS.provider===D.provider;
-  const opts=Object.entries(PROVIDERS).map(([k,v])=>`<button type="button" class="opt" role="radio" aria-checked="${D.provider===k}" data-act="ai-pick" data-id="${k}"><span class="radio"></span><span class="obody"><span class="oname">${esc(v.name)}${AIS.provider===k&&AIS.keys[k]?' · 사용 중':''}</span><span class="odesc">${esc(v.desc)}</span></span><span class="badge ${v.tag==='무료'?'':'plain'}">${v.tag}</span></button>`).join('');
   return `<form class="card" data-form="key" id="ai-card">
-    <h2>내 AI 연결</h2>
-    <p>캡처 분석과 AI 질문은 각자 연결한 AI로 해요. 키는 내 계정에만 저장되고, 다른 사람은 볼 수도 쓸 수도 없어요.</p>
-    <div class="opts" role="radiogroup" aria-label="AI 고르기">${opts}</div>
+    <h2>내 AI 연결 · Gemini (무료)</h2>
+    <p>캡처 분석과 AI 질문은 각자 연결한 Gemini로 해요. 구글 계정만 있으면 무료로 쓸 수 있어요. 키는 내 계정에만 저장되고, 다른 사람은 볼 수도 쓸 수도 없어요.</p>
     <ol class="steps">${P.steps.map(x=>`<li>${x}</li>`).join('')}</ol>
     <a class="btn sm outline" href="${P.keyUrl}" target="_blank" rel="noopener noreferrer" style="align-self:flex-start">${esc(P.name)} 키 만들러 가기</a>
     <div class="field"><label for="s-key">${esc(P.name)} API 키</label><input id="s-key" class="inp" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" data-bind="aiDraft.key" value="${esc(D.key)}" placeholder="${esc(P.keyHint)}"></div>
     <div class="field"><label for="s-model">모델</label><select id="s-model" class="inp" data-change="ai-model">${P.models.map(([v,l])=>`<option value="${v}" ${v===D.model?'selected':''}>${esc(l)}</option>`).join('')}</select></div>
     <p>${esc(P.note)}</p>
-    <div class="actions">${saved?`<button type="button" class="btn sm outline" data-act="key-clear">키 지우기</button>`:''}<button class="btn sm">${active?'저장':'이 AI로 연결하기'}</button></div>
+    <div class="actions">${saved?`<button type="button" class="btn sm outline" data-act="key-clear">키 지우기</button>`:''}<button class="btn sm">${active?'저장':'연결하기'}</button></div>
     ${active?`<button type="button" class="btn sm outline" data-act="key-test" ${S.test==='run'?'disabled':''}>${S.test==='run'?'확인하는 중…':'연결 테스트'}</button>`:''}
     ${S.test && S.test!=='run' ? `<p class="note ${S.test.ok?'ok':'err'}">${esc(S.test.msg)}</p>` : ''}
   </form>`;
@@ -1033,7 +1002,7 @@ document.addEventListener('submit', async e=>{
   if(S.phase!=='ready') return;
   if(k==='search'){ $('#q')?.blur(); return; }
   if(k==='key'){ const D=S.aiDraft; if(!D) return; const v=(D.key||'').trim(); if(!v){ toast('API 키를 붙여넣어 주세요'); return; }
-    AIS.provider=D.provider; AIS.keys[D.provider]=v; AIS.models[D.provider]=D.model; aiSave(); S.test=null; renderView(); toast(`${PROVIDERS[D.provider].name}로 연결했어요. 연결 테스트를 눌러 확인해 보세요`); return; }
+    AIS.provider=D.provider; AIS.keys[D.provider]=v; AIS.models[D.provider]=D.model; aiSave(); S.test=null; renderView(); toast('연결했어요. 연결 테스트를 눌러 확인해 보세요'); return; }
   if(k==='link'){ const d=S.add.draft; if(!safeLink(d.url)){ S.add.err='https://로 시작하는 링크를 넣어주세요.'; renderSheet(); return; }
     S.add.err=null; if(hasAI()) analyze(); else { S.add.note=errCopy('no_key'); toReview({}); } return; }
   if(k==='save'){ saveAdd(); return; }

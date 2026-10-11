@@ -32,13 +32,14 @@ service cloud.firestore {
 
 **다른 기기에서도 설정 없이 쓰려면** `index.html`의 `const FIREBASE_CONFIG = null;` 을 복사한 설정 객체로 바꿔 올리세요. Firebase 웹 설정값은 공개돼도 괜찮은 값이고, 데이터는 위 보안 규칙으로 본인만 읽고 쓸 수 있어요.
 
-## 3. 각자 내 AI 연결하기
+## 3. 각자 내 AI(Gemini) 연결하기
 캡처 분석과 AI 질문은 **로그인한 사람마다 자기 AI 키**로 해요. 키는 그 사람 계정(`catchcatch/<uid>/meta/settings`)에만 저장되고, 다른 사람은 볼 수도 쓸 수도 없어요.
 
-앱 **설정 → 내 AI 연결**에서 하나를 골라요.
-- **Gemini (무료)**: https://aistudio.google.com/app/apikey 에서 키 만들기. 무료 키로 보낸 내용은 구글이 서비스 개선에 쓸 수 있어요.
-- **ChatGPT (유료)**: https://platform.openai.com/api-keys — OpenAI API 크레딧 충전이 필요해요 (ChatGPT 구독과 별개).
-- **Claude (유료)**: https://platform.claude.com/settings/keys — 워크스페이스 키로 만들고, API 크레딧 충전이 필요해요 (Claude 구독과 별개).
+앱 **설정 → 내 AI 연결**에서 Gemini 키를 넣어요 (무료).
+1. https://aistudio.google.com/app/apikey 에서 **API 키 만들기** (프로젝트가 없다고 나오면 프로젝트부터 만들기).
+2. `AIza…`로 시작하는 키를 붙여넣고 **연결하기 → 연결 테스트**.
+
+무료 키로 보낸 내용은 구글이 서비스 개선에 쓸 수 있어요.
 
 키가 없어도 직접 입력으로 저장·검색은 됩니다.
 
