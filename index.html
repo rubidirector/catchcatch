@@ -66,7 +66,7 @@ body.gate .tabbar{display:none}
 .textbtn.danger{color:var(--danger)}
 
 .folders{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.fcard{min-height:104px;border-radius:20px;background:var(--surface);padding:14px 16px;display:flex;flex-direction:column;justify-content:space-between;gap:10px;border:1px solid transparent;text-align:left;cursor:pointer}
+.fcard{min-height:72px;border-radius:18px;background:var(--surface);padding:12px 16px;display:flex;flex-direction:column;justify-content:space-between;gap:10px;border:1px solid transparent;text-align:left;cursor:pointer}
 .fcard.picked{border:1.5px solid var(--ink)}
 .fchk{width:22px;height:22px;border-radius:11px;border:1.5px solid var(--mute);display:flex;align-items:center;justify-content:center;color:var(--bg)}
 .fchk.on{background:var(--ink);border-color:var(--ink)}
@@ -289,7 +289,7 @@ const SPIN = n => `<svg class="spinner" width="${n}" height="${n}" viewBox="0 0 
 
 const S = { ready:false, user:null, folders:[], caps:[], view:'home', stack:[], folderId:null, capId:null,
   q:'', filter:'all', tab:'summary', edit:null, confirmDel:false, newFolder:null, rename:null, confirmFolderDel:false,
-  ask:null, add:null, aiDraft:null, test:null, confirmLogout:false, loginErr:'', dataErr:'', busy:'', loggingIn:false, migrate:0, reai:false, reaiMsg:'', selMode:false, sel:new Set(), confirmBulk:false, capSelMode:false, capSel:new Set(), confirmCapDel:false, move:null };
+  ask:null, add:null, aiDraft:null, test:null, confirmLogout:false, loginErr:'', dataErr:'', busy:'', loggingIn:false, migrate:0, reai:false, reaiMsg:'', selMode:false, sel:new Set(), confirmBulk:false, capSelMode:false, capSel:new Set(), confirmCapDel:false, move:null, exp:null };
 const LS = { get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }, set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }, del(k){ try{ localStorage.removeItem(k); }catch(e){} } };
 const now = () => Date.now();
 const newId = () => (crypto.randomUUID ? crypto.randomUUID().replace(/-/g,'') : Date.now().toString(36)+Math.random().toString(36).slice(2));
@@ -630,8 +630,8 @@ function viewHome(){
   if(!n) head='캡처를 올리면<br>AI가 읽고 정리해둘게요';
   else if(today) head=`오늘 모은 캡처 <b>${today}개</b>,<br>모두 ${n}개를 정리해뒀어요`;
   else head=`캡처 <b>${n}개</b>를<br>폴더 ${S.folders.length}개에 정리해뒀어요`;
-  let h=`<div class="top"><h1 class="logo" style="margin:0">${LOGO(34)}<span class="sr">캐치캐치</span></h1><button class="iconbtn" id="gear" data-act="go-settings" aria-label="설정">${ic(I.gear,20)}${hasAI()?'':'<span class="ping"></span>'}</button></div>
-  <div><div class="eyebrow">${esc(date)}</div><h1 class="headline">${head}</h1></div>`;
+  let h=`<div class="top" style="padding-top:14px;align-items:flex-end"><h1 class="logo" style="margin:0">${LOGO(34)}<span class="sr">캐치캐치</span></h1><button class="iconbtn" id="gear" data-act="go-settings" aria-label="설정">${ic(I.gear,20)}${hasAI()?'':'<span class="ping"></span>'}</button></div>
+  <div style="margin-top:-8px"><div class="eyebrow">${esc(date)}</div><h1 class="headline">${head}</h1></div>`;
   h+=dataErrHTML();
   if(S.user && S.migrate>0) h+=`<div class="banner"><p>이 기기에만 있던 캡처 <b>${S.migrate}개</b>를 계정으로 옮길까요?</p><button class="btn sm" data-act="migrate" ${S.busy?'disabled':''}>${S.busy?SPIN(18):'옮기기'}</button></div>`;
   if(!S.user && n>0 && !LS.get('cc_local_warn_off')) h+=`<div class="banner"><p><b>이 기기에만 저장돼 있어요.</b> 홈 화면 앱을 지우거나 방문 기록을 지우면 사라져요. 로그인하면 계정에 안전하게 보관돼요.</p><button class="btn sm" data-act="go-account">로그인</button></div>`;
@@ -663,9 +663,9 @@ function viewFolder(){
       const n=S.capSel.size;
       h+= S.confirmCapDel
         ? `<div class="confirm"><p>캡처 ${n}개를 삭제할까요? 이미지와 요약이 모두 지워져요.</p><div class="actions"><button class="btn sm outline" data-act="cdel-cancel">취소</button><button class="btn sm danger" data-act="cdel-yes">삭제</button></div></div>`
-        : `<div class="banner selbar"><p>${n?`<b>${n}개</b> 선택했어요`:'캡처를 눌러 선택하세요'}</p><button class="btn sm outline" data-act="csel-all">${n===list.length?'선택 해제':'모두 선택'}</button><button class="btn sm outline" data-act="cmove" ${n?'':'disabled'}>폴더 이동</button><button class="btn sm danger" data-act="cdel-ask" ${n?'':'disabled'}>${ic(I.trash,18)}삭제</button></div>`;
+        : `<div class="banner selbar"><p>${n?`<b>${n}개</b> 선택했어요`:'캡처를 눌러 선택하세요'}</p><button class="btn sm outline" data-act="csel-all">${n===list.length?'선택 해제':'모두 선택'}</button><button class="btn sm outline" data-act="cmove" ${n?'':'disabled'}>폴더 이동</button><button class="btn sm outline" data-act="cexp" ${n?'':'disabled'}>저장</button><button class="btn sm danger" data-act="cdel-ask" ${n?'':'disabled'}>${ic(I.trash,18)}삭제</button></div>`;
     } else {
-      h+=`<p class="hint" style="text-align:center">캡처를 꾹 누르면 다른 폴더로 옮길 수 있어요</p><button class="btn outline wide" data-act="export-folder">${ic(I.down,20)}폴더 전체 요약 파일로 저장</button>`;
+      h+=`<p class="hint" style="text-align:center">캡처를 꾹 누르면 다른 폴더로 옮길 수 있어요</p><button class="btn outline wide" data-act="exp-folder">${ic(I.down,20)}폴더 저장하기</button>`;
     }
   }
   return h;
@@ -707,7 +707,7 @@ function viewDetail(){
   h+=`<div class="mrow"><label for="move">폴더</label><select id="move" class="sel" data-change="move">${S.folders.map(f=>`<option value="${esc(f.id)}" ${f.id===c.folderId?'selected':''}>${esc(f.name)}</option>`).join('')}${folderOf(c.folderId)?'':'<option selected value="">미분류</option>'}</select></div>`;
   h+=`<div class="mrow"><span>저장한 날</span><span class="v">${fmtDate(c.createdAt)}</span></div></div>`;
   if(S.confirmDel) h+=`<div class="confirm"><p>이 캡처를 삭제할까요? 이미지와 요약이 모두 지워져요.</p><div class="actions"><button class="btn sm outline" data-act="del-cancel">취소</button><button class="btn sm danger" data-act="del-yes">삭제</button></div></div>`;
-  else h+=`<div class="actions"><button class="btn" data-act="export">${ic(I.down,20)}요약 파일 저장</button>${c.assetId?`<button class="btn outline" data-act="save-img">${ic(I.image,20)}이미지 저장</button>`:''}</div>
+  else h+=`<div class="actions"><button class="btn" data-act="exp-one">${ic(I.down,20)}저장하기</button></div>
     <button class="textbtn danger" data-act="del" style="align-self:flex-start">${ic(I.trash,16)}캡처 삭제</button>`;
   return h;
 }
@@ -783,13 +783,6 @@ function viewSettings(){
   <div><div class="eyebrow">설정</div><h1 class="headline">설정</h1></div>
   ${accountCard()}
   ${aiCard()}
-  <div class="card">
-    <h2>파일로 내보내기</h2>
-    <p>모든 캡처를 파일 하나로 받아두거나, 백업 파일을 불러올 수 있어요.</p>
-    <p class="fcount">캡처 ${S.caps.length}개 · 폴더 ${S.folders.length}개</p>
-    ${S.busy?`<p class="note">${esc(S.busy)}</p>`:''}
-    <div class="actions"><button class="btn sm outline" data-act="backup" ${S.busy?'disabled':''}>${ic(I.down,18)}백업 파일 저장</button><button class="btn sm outline" data-act="restore" ${S.busy?'disabled':''}>${ic(I.up,18)}백업 불러오기</button></div>
-  </div>
   <button class="btn outline wide" data-act="tour">${ic(I.help,20)}사용 방법 다시 보기</button>
   ${footer()}`;
 }
@@ -909,7 +902,7 @@ function folderOpts(){
   return h;
 }
 function saveLabel(){ const A=S.add; const n = A.choice==='aiNew' ? A.aiNew : A.choice==='new' ? (A.newName.trim()||'새 폴더') : folderName(A.choice); return `‘${n}’에 저장하기`; }
-function openMove(ids){
+function openMove(ids){ if(S.exp) return;
   ids=ids.filter(id=>capOf(id)); if(!ids.length) return;
   if(S.add) closeAdd();
   S.move={ids, newName:''}; $('#sheet').hidden=false; renderSheet();
@@ -931,7 +924,108 @@ function doMove(folderId){
   closeMove(); S.capSelMode=false; S.capSel=new Set(); S.confirmCapDel=false; renderView();
   toast(n ? `${n>1?`캡처 ${n}개를 `:''}‘${folderName(folderId)}’로 옮겼어요` : '이미 그 폴더에 있어요');
 }
-function renderSheet(){ if(S.move){ paint($('#sheet'), moveHTML()); return; } if(!S.add) return; paint($('#sheet'), sheetHTML()); const dz=$('#drop'); if(dz) wireDrop(dz); }
+/* ===== save: original images, or the organized text as PDF / PNG / JPG ===== */
+const JSPDF_URL='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+const JSZIP_URL='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+const loaded={};
+function loadScript(src){ if(loaded[src]) return loaded[src]; loaded[src]=new Promise((res,rej)=>{ const sc=document.createElement('script'); sc.src=src; sc.onload=res; sc.onerror=()=>{ delete loaded[src]; rej({msg:'저장 도구를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.'}); }; document.head.appendChild(sc); }); return loaded[src]; }
+async function ensureFonts(){ try{ await Promise.all(['600 56px "IBM Plex Sans KR"','400 30px "IBM Plex Sans KR"','500 26px "IBM Plex Mono"'].map(f=>document.fonts.load(f))); }catch(e){} }
+const b64ToBlob=(b64,type)=>{ const bin=atob(b64), u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return new Blob([u],{type}); };
+const canvasBlob=(cv,type)=>new Promise(r=>cv.toBlob(r,type,0.92));
+function wrapLines(ctx, text, maxW){
+  const out=[];
+  for(const para of String(text||'').split('\n')){
+    if(!para.trim()){ out.push(''); continue; }
+    let line='';
+    for(const tok of para.split(/(\s+)/)){
+      if(!tok) continue;
+      if(ctx.measureText(line+tok).width<=maxW){ line+=tok; continue; }
+      if(line.trim()){ out.push(line.trimEnd()); line=''; }
+      for(const ch of tok.replace(/^\s+/,'')){ if(ctx.measureText(line+ch).width>maxW && line){ out.push(line); line=ch; } else line+=ch; }
+    }
+    out.push(line.trimEnd());
+  }
+  return out;
+}
+function renderCard(c){
+  const W=1080, P=84, CW=W-P*2, SANS='"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif', MONO='"IBM Plex Mono",ui-monospace,monospace';
+  const INK='#2A2A2C', MUTE='#6A6A6E', PINK='#D98C9C', LINE='#E2E2DF';
+  const m=document.createElement('canvas').getContext('2d');
+  const ops=[]; let y=P;
+  const text=(str,font,color,lh,indent=0,max=Infinity)=>{ m.font=font; let lines=wrapLines(m,str,CW-indent); if(lines.length>max){ lines=lines.slice(0,max); lines[max-1]=lines[max-1].replace(/.{0,2}$/,'')+'…'; } for(const l of lines){ ops.push({t:'text',s:l,font,color,x:P+indent,y:y+lh*0.78}); y+=lh; } };
+  const gap=h=>{ y+=h; };
+  text([folderName(c.folderId), fmtDate(c.createdAt)].join('  ·  '), `500 24px ${MONO}`, MUTE, 36); gap(18);
+  text(c.title||'제목 없음', `600 54px ${SANS}`, INK, 72); gap(10);
+  const meta=[c.source, safeLink(c.link)].filter(Boolean).join('  ·  ');
+  if(meta){ text(meta, `400 26px ${SANS}`, MUTE, 38, 0, 3); }
+  gap(28); ops.push({t:'line',y}); gap(36);
+  if((c.summary||[]).length){
+    text('요약', `500 24px ${MONO}`, MUTE, 36); gap(10);
+    for(const sItem of c.summary){ ops.push({t:'dot',x:P+8,y:y+23}); text(sItem, `400 32px ${SANS}`, INK, 50, 34); gap(8); }
+    gap(22);
+  }
+  if((c.tags||[]).length){ text(c.tags.map(t=>'#'+t).join('   '), `500 28px ${SANS}`, PINK, 42); gap(30); }
+  if(c.text){ text('원문 텍스트', `500 24px ${MONO}`, MUTE, 36); gap(10); text(c.text, `400 28px ${SANS}`, INK, 46, 0, 130); gap(20); }
+  gap(30); const markY=y; gap(70+P-30);
+  const H=Math.min(Math.ceil(y), 9000);
+  const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const g=cv.getContext('2d');
+  g.fillStyle='#FFFFFF'; g.fillRect(0,0,W,H);
+  for(const o of ops){
+    if(o.t==='text'){ g.font=o.font; g.fillStyle=o.color; g.fillText(o.s,o.x,o.y); }
+    else if(o.t==='line'){ g.fillStyle=LINE; g.fillRect(P,o.y,CW,2); }
+    else if(o.t==='dot'){ g.fillStyle=INK; g.beginPath(); g.arc(o.x,o.y,5,0,Math.PI*2); g.fill(); }
+  }
+  g.save(); g.translate(P, Math.min(markY, H-70-P/2)); g.scale(0.95,0.95); g.strokeStyle='#EDBFC6'; g.lineWidth=5.5; g.lineCap='butt'; g.lineJoin='miter'; g.stroke(new Path2D(MARK_D)); g.restore();
+  return cv;
+}
+function openExport(ids, name){ ids=ids.filter(id=>capOf(id)); if(!ids.length) return; if(S.add) closeAdd(); if(S.move) closeMove(); S.exp={ids, name, busy:'', err:''}; $('#sheet').hidden=false; renderSheet(); }
+function closeExport(){ if(!S.exp) return; S.exp=null; $('#sheet').hidden=true; }
+function expHTML(){
+  const E=S.exp, caps=E.ids.map(capOf).filter(Boolean), n=caps.length, imgs=caps.filter(c=>c.assetId).length, many=n>1;
+  const opt=(k,name,desc,dis)=>`<button type="button" class="opt" data-act="exp-run" data-id="${k}" ${dis||E.busy?'disabled':''} style="${dis?'opacity:.5':''}">${E.busy===k?SPIN(20):`<span class="fchk" style="border-color:var(--line)"></span>`}<span class="obody"><span class="oname">${name}</span><span class="odesc">${desc}</span></span></button>`;
+  return `<div class="panel" role="dialog" aria-modal="true" aria-labelledby="ex-t">
+    <div class="shead"><h2 id="ex-t">${many?`‘${esc(E.name)}’ 저장하기`:'저장하기'}</h2><button class="iconbtn bare" data-act="close-exp" aria-label="닫기">${ic(I.close)}</button></div>
+    <p class="hint">${many?`캡처 ${n}개를 어떤 형식으로 저장할까요?`:`‘${esc(caps[0].title||'제목 없음')}’을 어떤 형식으로 저장할까요?`}</p>
+    <span class="flabel">이미지</span>
+    <div class="opts">${opt('img','원본 이미지', imgs ? (imgs>1?`캡처 이미지 ${imgs}장 · ZIP 파일 하나로`:'캡처 이미지 그대로 · JPG') : '저장된 캡처 이미지가 없어요', !imgs)}</div>
+    <span class="flabel">텍스트 정리본 (제목·요약·태그·원문)</span>
+    <div class="opts">
+      ${opt('pdf','PDF', many?`캡처 ${n}개를 PDF 한 파일로`:'A4 크기 PDF')}
+      ${opt('png','PNG 이미지', many?`캡처마다 한 장씩 · ZIP 파일 하나로`:'정리본을 PNG 이미지 한 장으로')}
+      ${opt('jpg','JPG 이미지', many?`캡처마다 한 장씩 · ZIP 파일 하나로`:'정리본을 JPG 이미지 한 장으로 · 용량이 더 작아요')}
+    </div>
+    ${E.err?`<p class="note err">${esc(E.err)}</p>`:''}
+  </div>`;
+}
+async function runExport(kind){
+  const E=S.exp; if(!E || E.busy) return; E.busy=kind; E.err=''; renderSheet();
+  try{
+    const caps=E.ids.map(capOf).filter(Boolean), base=fname(E.name);
+    if(kind==='img'){
+      const withImg=caps.filter(c=>c.assetId);
+      if(withImg.length===1){ const b=await fullB64(withImg[0].assetId); if(!b) throw {msg:'이미지를 불러오지 못했어요.'}; download(fname(withImg[0].title)+'.jpg', b64ToBlob(b,'image/jpeg')); }
+      else { await loadScript(JSZIP_URL); const z=new JSZip(); let i=0; for(const c of withImg){ const b=await fullB64(c.assetId); if(b) z.file(`${String(++i).padStart(2,'0')}_${fname(c.title)}.jpg`, b, {base64:true}); } download(base+'_이미지.zip', await z.generateAsync({type:'blob'})); }
+    } else if(kind==='pdf'){
+      await Promise.all([loadScript(JSPDF_URL), ensureFonts()]);
+      const doc=new window.jspdf.jsPDF({unit:'pt', format:'a4'}), pw=595.28, ph=841.89; let first=true;
+      for(const c of caps){
+        const cv=renderCard(c), sliceH=Math.floor(cv.width*ph/pw);
+        for(let y=0; y<cv.height; y+=sliceH){
+          const h=Math.min(sliceH, cv.height-y), pc=document.createElement('canvas'); pc.width=cv.width; pc.height=sliceH;
+          const g=pc.getContext('2d'); g.fillStyle='#FFFFFF'; g.fillRect(0,0,pc.width,pc.height); g.drawImage(cv,0,y,cv.width,h,0,0,cv.width,h);
+          if(!first) doc.addPage(); first=false; doc.addImage(pc.toDataURL('image/jpeg',0.9),'JPEG',0,0,pw,ph);
+        }
+      }
+      download((caps.length>1?base:fname(caps[0].title))+'.pdf', doc.output('blob'));
+    } else {
+      await ensureFonts(); const type=kind==='png'?'image/png':'image/jpeg';
+      if(caps.length===1) download(fname(caps[0].title)+'.'+kind, await canvasBlob(renderCard(caps[0]), type));
+      else { await loadScript(JSZIP_URL); const z=new JSZip(); let i=0; for(const c of caps) z.file(`${String(++i).padStart(2,'0')}_${fname(c.title)}.${kind}`, await canvasBlob(renderCard(c), type)); download(`${base}_정리본_${kind.toUpperCase()}.zip`, await z.generateAsync({type:'blob'})); }
+    }
+    closeExport(); toast('저장했어요');
+  }catch(e){ if(!S.exp) return; S.exp.busy=''; S.exp.err=(e && e.msg) || '저장하지 못했어요. 다시 시도해 주세요.'; renderSheet(); }
+}
+function renderSheet(){ if(S.exp){ paint($('#sheet'), expHTML()); return; } if(S.move){ paint($('#sheet'), moveHTML()); return; } if(!S.add) return; paint($('#sheet'), sheetHTML()); const dz=$('#drop'); if(dz) wireDrop(dz); }
 function wireDrop(dz){
   dz.addEventListener('dragover',e=>{ e.preventDefault(); dz.classList.add('over'); });
   dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
@@ -1144,7 +1238,11 @@ document.addEventListener('click', async e=>{
       write(DB.del('captures', c.id)).catch(()=>{}); if(c.assetId){ write(DB.del('images', c.assetId)).catch(()=>{}); delete FULL[c.assetId]; }
       toast('삭제했어요'); back(); break; }
     case 'reai': { const c=capOf(S.capId); if(c && !S.reai) reorganize(c); break; }
-    case 'export': { const c=capOf(S.capId); if(c) download(fname(c.title)+'.md', toMd(c)); break; }
+    case 'exp-one': { const c=capOf(S.capId); if(c) openExport([c.id], c.title||'캡처'); break; }
+    case 'exp-folder': { const list=S.caps.filter(c=> S.folderId==='_none' ? !folderOf(c.folderId) : c.folderId===S.folderId); openExport(list.map(c=>c.id), S.folderId==='_none'?'미분류':folderName(S.folderId)); break; }
+    case 'cexp': if(S.capSel.size) openExport([...S.capSel], S.folderId==='_none'?'미분류':folderName(S.folderId)); break;
+    case 'exp-run': runExport(id); break;
+    case 'close-exp': if(S.exp && !S.exp.busy) closeExport(); break;
     case 'export-folder': { const list=S.caps.filter(c=> S.folderId==='_none' ? !folderOf(c.folderId) : c.folderId===S.folderId);
       download(fname(S.folderId==='_none'?'미분류':folderName(S.folderId))+'.md', list.map(toMd).join('\n---\n\n')); break; }
     case 'save-img': { const c=capOf(S.capId); if(!c||!c.assetId) break; const u=FULL[c.assetId]; if(!u){ toast('이미지를 불러오는 중이에요. 잠시 후 다시 눌러주세요.'); break; }
@@ -1204,8 +1302,8 @@ document.addEventListener('paste', e=>{
   const f=[...(e.clipboardData?.files||[])].find(x=>x.type.startsWith('image/')); if(!f) return;
   e.preventDefault(); if(!S.add && !openAdd('capture')) return; setFile(f);
 });
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ if(TOUR.on) endTour(); else if(S.move) closeMove(); else if(S.add) closeAdd(); } });
-$('#sheet').addEventListener('click', e=>{ if(e.target.id!=='sheet') return; if(S.move) closeMove(); else if(S.add) closeAdd(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ if(TOUR.on) endTour(); else if(S.exp){ if(!S.exp.busy) closeExport(); } else if(S.move) closeMove(); else if(S.add) closeAdd(); } });
+$('#sheet').addEventListener('click', e=>{ if(e.target.id!=='sheet') return; if(S.exp){ if(!S.exp.busy) closeExport(); } else if(S.move) closeMove(); else if(S.add) closeAdd(); });
 /* long press (or right click) on a capture → move it to another folder */
 let lp=null, lpFired=false;
 document.addEventListener('pointerdown', e=>{
