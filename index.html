@@ -17,7 +17,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 /* Layout: one phone-width column (max 520px), fixed bottom bar with a pink "sphere" add button, bottom sheet for adding */
 :root{
@@ -39,6 +38,8 @@ img{max-width:100%}
 button,input,textarea,select{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .wrap{max-width:520px;margin:0 auto;padding-inline:20px;padding-block:16px 130px;display:flex;flex-direction:column;gap:22px}
+body.gate .wrap{padding-block:16px 40px}
+body.gate .tabbar{display:none}
 .top{display:flex;align-items:center;justify-content:space-between;min-height:48px;gap:8px}
 .logo{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:600;letter-spacing:-.02em;line-height:1}
 .logo span{display:block;line-height:1;padding-top:2px}
@@ -71,7 +72,7 @@ button,input,textarea,select{font:inherit;color:inherit}
 .list{display:flex;flex-direction:column}
 .row{display:flex;gap:14px;align-items:center;padding:11px 0;border:0;border-top:1px solid var(--line);background:none;width:100%;text-align:left;cursor:pointer}
 .thumb{flex:0 0 60px;height:60px;border-radius:14px;background:var(--surface);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--mute)}
-.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
 .rbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .rt{font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rs{font-size:13px;color:var(--mute);line-height:1.45;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
@@ -90,8 +91,9 @@ mark{background:var(--mark);color:var(--ink);border-radius:4px;padding:0 2px}
 .btn:disabled{opacity:.5;cursor:default}
 .btn.wide{width:100%}
 
-.pill{display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 16px;border-radius:22px;background:var(--surface);border:1px solid var(--line);font-size:13px;cursor:pointer;text-align:left;width:100%}
-.pill .pdot{flex:0 0 8px;height:8px;border-radius:4px;background:var(--pink)}
+.hero{display:flex;flex-direction:column;align-items:flex-start;gap:18px;padding-top:8vh}
+.hero h1{margin:0;font-size:30px;line-height:1.3;font-weight:500;letter-spacing:-.02em;text-wrap:balance}
+.hero p{margin:0;color:var(--mute);font-size:15px}
 
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-top:1px solid var(--line);padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px))}
 .tabs{max-width:520px;margin:0 auto;display:flex;justify-content:space-around;align-items:center}
@@ -99,8 +101,8 @@ mark{background:var(--mark);color:var(--ink);border-radius:4px;padding:0 2px}
 .tab[aria-current="page"]{color:var(--ink);font-weight:600}
 .addbtn{width:62px;height:62px;border-radius:31px;border:0;background:var(--pink);color:var(--on-pink);margin-top:-30px;box-shadow:0 0 0 6px var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer}
 
-.shot{border-radius:24px;background:var(--surface);overflow:hidden;display:flex;justify-content:center}
-.shot img{display:block;width:100%;max-height:68vh;object-fit:contain}
+.shot{border-radius:24px;background:var(--surface);overflow:hidden;display:flex;justify-content:center;min-height:120px;align-items:center}
+.shot img{display:block;width:100%;max-height:70vh;object-fit:contain}
 .seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:4px;border-radius:24px;background:var(--sunk)}
 .seg button{height:40px;border-radius:20px;border:0;background:transparent;cursor:pointer;font-size:14px}
 .seg button[aria-selected="true"]{background:var(--surface);font-weight:600}
@@ -112,6 +114,7 @@ mark{background:var(--mark);color:var(--ink);border-radius:4px;padding:0 2px}
 .chip{font-size:12px;padding:6px 11px;border-radius:14px;background:var(--surface);border:0;cursor:pointer;min-height:32px}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 .raw{white-space:pre-wrap;background:var(--surface);border-radius:18px;padding:16px;font-size:14px;line-height:1.75;overflow-wrap:anywhere;margin:0;font-family:var(--sans)}
+.code{white-space:pre;background:var(--bg);border-radius:14px;padding:14px;font-family:var(--mono);font-size:12px;line-height:1.6;overflow-x:auto;margin:0}
 .meta{display:flex;flex-direction:column;border-top:1px solid var(--line)}
 .mrow{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:50px;border-bottom:1px solid var(--line);font-size:14px}
 .mrow .v{font-family:var(--mono);font-size:12px;color:var(--mute);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
@@ -137,9 +140,11 @@ textarea.inp{resize:vertical;line-height:1.6}
 .card p{margin:0;font-size:13px;color:var(--mute)}
 .card a{color:var(--ink)}
 .acct{display:flex;align-items:center;gap:12px;min-width:0}
-.avatar{flex:0 0 40px;height:40px;border-radius:20px;background:var(--pink);color:var(--on-pink);display:flex;align-items:center;justify-content:center;font-weight:600}
+.avatar{flex:0 0 40px;height:40px;border-radius:20px;background:var(--pink);color:var(--on-pink);display:flex;align-items:center;justify-content:center;font-weight:600;overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:cover}
 .acct .rbody span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.steps{margin:0;padding-left:18px;font-size:13px;color:var(--mute);display:flex;flex-direction:column;gap:4px}
+.steps{margin:0;padding-left:20px;font-size:14px;color:var(--ink);display:flex;flex-direction:column;gap:8px}
+.steps b{font-weight:600}
 
 .sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center;background:var(--scrim)}
 .panel{width:100%;max-width:520px;max-height:94%;overflow-y:auto;background:var(--bg);border-radius:28px 28px 0 0;padding:14px 20px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:18px}
@@ -171,7 +176,7 @@ details summary{cursor:pointer;font-size:13px;color:var(--mute);min-height:36px;
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 </style>
 </head>
-<body>
+<body class="gate">
 <div id="view" class="wrap" aria-live="polite"></div>
 
 <nav class="tabbar" aria-label="메뉴">
@@ -195,14 +200,26 @@ details summary{cursor:pointer;font-size:13px;color:var(--mute);min-height:36px;
 
 <script>
 /* ============================================================
-   설정: 구글 로그인용 OAuth 클라이언트 ID
-   여기에 넣어두면 앱 설정 화면에서 따로 입력하지 않아도 돼요.
-   예) const GOOGLE_CLIENT_ID = '1234-abcd.apps.googleusercontent.com';
+   Firebase 설정
+   Firebase 콘솔 → 프로젝트 설정 → 내 앱(웹)에 나오는 firebaseConfig 값을
+   아래에 붙여넣어 두면, 어느 기기에서 열어도 바로 로그인 화면이 떠요.
+   비워두면 앱 첫 화면에서 붙여넣을 수 있어요.
    ============================================================ */
-const GOOGLE_CLIENT_ID = '';
+const FIREBASE_CONFIG = null;
+/* 예)
+const FIREBASE_CONFIG = {
+  apiKey: "AIza...",
+  authDomain: "my-project.firebaseapp.com",
+  projectId: "my-project",
+  storageBucket: "my-project.appspot.com",
+  messagingSenderId: "1234567890",
+  appId: "1:1234567890:web:abcdef"
+};
+*/
 
 (function(){
-const VERSION = 'v2.0';
+const VERSION = 'v3.0';
+const FB_VER = '10.12.2';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ic = (p, n=22) => `<svg width="${n}" height="${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
@@ -220,57 +237,135 @@ const I = {
   spark:'<path d="M12 3 L13.6 9.4 L20 11 L13.6 12.6 L12 19 L10.4 12.6 L4 11 L10.4 9.4 Z"/>',
   stop:'<rect x="7" y="7" width="10" height="10" rx="1.5"/>',
   gear:'<circle cx="12" cy="12" r="3"/><path d="M12 3 V5.5 M12 18.5 V21 M3 12 H5.5 M18.5 12 H21 M5.6 5.6 L7.4 7.4 M16.6 16.6 L18.4 18.4 M5.6 18.4 L7.4 16.6 M16.6 7.4 L18.4 5.6"/>',
-  cloud:'<path d="M7 18 H17 a4 4 0 0 0 .5 -7.97 A6 6 0 0 0 6.1 9.5 A4.25 4.25 0 0 0 7 18 Z"/>',
-  sync:'<path d="M4 12 a8 8 0 0 1 13.7 -5.6 L20 8.5 M20 4 V8.5 H15.5"/><path d="M20 12 a8 8 0 0 1 -13.7 5.6 L4 15.5 M4 20 V15.5 H8.5"/>'
+  copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8 V5 a1 1 0 0 0 -1 -1 H5 a1 1 0 0 0 -1 1 V15 a1 1 0 0 0 1 1 H8"/>'
 };
 /* 캐치캐치 logo: one continuous line drawing of a hand pinching the pink sphere */
 const HAND = 'M8 44 C 9 36, 10 29, 14 22 C 16 18.5, 20 16, 25.5 15.2 C 28 14.9, 28.6 18.3, 26.4 18.9 C 23.5 19.6, 20.5 20.6, 18.5 22.5 C 17.3 23.7, 17.6 25.5, 19 25.6 C 21.5 25.7, 23.5 25.3, 26 25.6 C 28.4 25.9, 28.2 29.3, 25.6 29.6 C 21 30.2, 17 33.5, 15.5 37 C 14.8 39, 14.6 41.5, 14.8 44';
 const LOGO = (w=32,h=30) => `<svg width="${w}" height="${h}" viewBox="6 13 35 33" style="display:block;flex:0 0 auto" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="33.2" cy="22.4" r="6.6" style="fill:var(--pink);stroke:none"/><path d="${HAND}"/></svg>`;
 const SPIN = n => `<svg width="${n}" height="${n}" viewBox="0 0 40 40" aria-hidden="true"><g class="spin"><path d="M20 3 A17 17 0 0 1 20 37" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M20 10 A10 10 0 0 1 20 30" fill="none" stroke="currentColor" stroke-width="1.2"/></g><circle cx="17" cy="20" r="7" style="fill:var(--pink)"/></svg>`;
+const RULES = `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == uid;
+    }
+  }
+}`;
 
-const S = { status:'loading', folders:[], caps:[], view:'home', stack:[], folderId:null, capId:null,
+/* phase: setup (Firebase 설정 필요) → auth (확인 중) → login (로그인 필요) → loading (불러오는 중) → ready */
+const S = { phase:'auth', user:null, folders:[], caps:[], view:'home', stack:[], folderId:null, capId:null,
   q:'', filter:'all', tab:'summary', edit:null, confirmDel:false, newFolder:null, rename:null, confirmFolderDel:false,
-  ask:null, add:null, keyDraft:null, gidDraft:null, test:null, confirmWipe:false, confirmLogout:false };
+  ask:null, add:null, keyDraft:null, cfgDraft:'', test:null, confirmLogout:false, loginErr:'', dataErr:'', busy:'' };
 
-/* ---------- browser storage ---------- */
+/* ---------- browser storage (device settings only) ---------- */
 const LS = { get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }, set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }, del(k){ try{ localStorage.removeItem(k); }catch(e){} } };
-let IDB=null; const URLS={}; let SUPPRESS=false;
-function idbOpen(){ return new Promise((res,rej)=>{ const r=indexedDB.open('catchcatch',1);
-  r.onupgradeneeded=()=>{ const d=r.result; d.createObjectStore('folders',{keyPath:'id'}); d.createObjectStore('captures',{keyPath:'id'}); d.createObjectStore('images'); };
-  r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
-function tx(store, mode, fn){ return new Promise((res,rej)=>{ const t=IDB.transaction(store,mode); const r=fn(t.objectStore(store)); let out;
-  if(r) r.onsuccess=()=>{ out=r.result; }; t.oncomplete=()=>res(out); t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error); }); }
-const dbAll = s => tx(s,'readonly',st=>st.getAll());
-const dbGet = (s,k) => tx(s,'readonly',st=>st.get(k));
-async function dbPut(s,v,k){ const r=await tx(s,'readwrite',st=> k===undefined ? st.put(v) : st.put(v,k)); markDirty(); return r; }
-async function dbDel(s,k){ const r=await tx(s,'readwrite',st=>st.delete(k)); markDirty(); return r; }
-const newId = () => (crypto.randomUUID ? crypto.randomUUID().replace(/-/g,'') : Date.now().toString(36)+Math.random().toString(36).slice(2));
-const getTomb = () => { try{ return JSON.parse(LS.get('cc_tomb')||'[]'); }catch(e){ return []; } };
-const setTomb = a => LS.set('cc_tomb', JSON.stringify(a.slice(-5000)));
-const addTomb = id => { const t=getTomb(); if(!t.includes(id)){ t.push(id); setTomb(t); } };
-async function reload(){
-  const [f,c]=await Promise.all([dbAll('folders'),dbAll('captures')]);
-  S.folders=f.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0)); S.caps=c.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-  for(const x of S.caps){ if(x.assetId && !URLS[x.assetId]){ const b=await dbGet('images',x.assetId); if(b) URLS[x.assetId]=URL.createObjectURL(b); } }
-  S.status='ready'; renderView(); if(S.add && S.add.phase==='review') renderSheet();
+
+/* ---------- Firebase ---------- */
+let FB=null; const UNSUB=[]; const FULL={};
+function getConfig(){
+  if(FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey) return FIREBASE_CONFIG;
+  try{ const c=JSON.parse(LS.get('cc_fbcfg')||'null'); if(c && c.apiKey) return c; }catch(e){}
+  return null;
 }
-async function addFolder(name, ai){ const same=S.folders.find(f=>f.name===name); if(same) return same.id; const t=Date.now(); const f={id:newId(), name, ai:!!ai, createdAt:t, updatedAt:t}; await dbPut('folders',f); return f.id; }
-function storeErr(e){ return (e && (e.name==='QuotaExceededError' || /quota/i.test(String(e.message||'')))) ? '기기 저장 공간이 부족해요. 오래된 캡처를 지운 뒤 다시 시도해 주세요.' : '저장하지 못했어요. 다시 시도해 주세요.'; }
+function parseConfig(text){
+  const out={}; const re=/["']?(apiKey|authDomain|projectId|storageBucket|messagingSenderId|appId|measurementId)["']?\s*:\s*["']([^"']+)["']/g; let m;
+  while((m=re.exec(text))) out[m[1]]=m[2].trim();
+  return (out.apiKey && out.authDomain && out.projectId && out.appId) ? out : null;
+}
+async function initFirebase(cfg){
+  const base=`https://www.gstatic.com/firebasejs/${FB_VER}/`;
+  const [appM, authM, fsM]=await Promise.all([import(base+'firebase-app.js'), import(base+'firebase-auth.js'), import(base+'firebase-firestore.js')]);
+  const app=appM.initializeApp(cfg);
+  const auth=authM.getAuth(app);
+  let db; try{ db=fsM.initializeFirestore(app,{ localCache: fsM.persistentLocalCache({tabManager: fsM.persistentMultipleTabManager()}) }); }catch(e){ db=fsM.getFirestore(app); }
+  FB={app, auth, db, A:authM, F:fsM};
+  try{ await authM.getRedirectResult(auth); }catch(e){ S.loginErr=authErr(e); }
+  authM.onAuthStateChanged(auth, onUser);
+}
+const ref = (name,id) => FB.F.doc(FB.db,'users',S.user.uid,name,id);
+const col = name => FB.F.collection(FB.db,'users',S.user.uid,name);
+function write(p){ return p.catch(e=>{ toast(fsErr(e)); throw e; }); }
+function fsErr(e){
+  const c=e && e.code || '';
+  if(c==='permission-denied') return '저장 권한이 없어요. Firestore 보안 규칙을 확인해 주세요.';
+  if(c==='resource-exhausted') return '오늘 쓸 수 있는 무료 저장 한도를 넘었어요. 내일 다시 시도해 주세요.';
+  if(c==='invalid-argument') return '저장할 수 없는 내용이 있어요. 이미지가 너무 크면 다른 캡처로 시도해 주세요.';
+  if(c==='unavailable') return '인터넷이 끊겨 있어요. 연결되면 자동으로 저장돼요.';
+  return '저장하지 못했어요. 다시 시도해 주세요.';
+}
+function authErr(e){
+  const c=e && e.code || '';
+  if(c==='auth/unauthorized-domain') return `이 주소에서 로그인할 수 없도록 막혀 있어요. Firebase 콘솔 → Authentication → 설정 → 승인된 도메인에 ${location.hostname} 을 추가해 주세요.`;
+  if(c==='auth/operation-not-allowed') return 'Google 로그인이 꺼져 있어요. Firebase 콘솔 → Authentication → 로그인 방법에서 Google을 사용 설정해 주세요.';
+  if(c==='auth/popup-closed-by-user' || c==='auth/cancelled-popup-request') return '로그인 창이 닫혔어요. 다시 눌러주세요.';
+  if(c==='auth/invalid-api-key' || c==='auth/api-key-not-valid.-please-pass-a-valid-api-key.') return 'Firebase 설정값이 맞지 않아요. 설정을 다시 붙여넣어 주세요.';
+  if(c==='auth/network-request-failed') return '인터넷 연결을 확인하고 다시 시도해 주세요.';
+  return `로그인하지 못했어요. (${c||'알 수 없는 오류'})`;
+}
+async function login(){
+  if(!FB) return;
+  S.loginErr=''; S.busy='login'; renderView();
+  const {GoogleAuthProvider, signInWithPopup, signInWithRedirect}=FB.A;
+  const p=new GoogleAuthProvider(); p.setCustomParameters({prompt:'select_account'});
+  try{ await signInWithPopup(FB.auth, p); }
+  catch(e){
+    if(['auth/popup-blocked','auth/operation-not-supported-in-this-environment','auth/web-storage-unsupported'].includes(e.code)){
+      try{ await signInWithRedirect(FB.auth, p); return; }catch(e2){ S.loginErr=authErr(e2); }
+    } else S.loginErr=authErr(e);
+  }
+  S.busy=''; renderView();
+}
+async function logout(){ S.confirmLogout=false; try{ await FB.A.signOut(FB.auth); }catch(e){} toast('로그아웃했어요'); }
+function onUser(user){
+  UNSUB.splice(0).forEach(u=>{ try{ u(); }catch(e){} });
+  if(!user){ Object.assign(S,{user:null, folders:[], caps:[], phase:'login', view:'home', stack:[], busy:''}); closeAdd(); renderView(); return; }
+  S.user={uid:user.uid, email:user.email||'', name:user.displayName||'', photo:user.photoURL||''};
+  S.phase='loading'; S.dataErr=''; S.busy=''; renderView();
+  const F=FB.F; let gotF=false, gotC=false;
+  const done=()=>{ if(gotF && gotC && S.phase==='loading'){ S.phase='ready'; } renderView(); if(S.add && S.add.phase==='review') renderSheet(); };
+  const onErr=e=>{ S.dataErr = e && e.code==='permission-denied' ? 'perm' : (e && (e.code==='failed-precondition' || e.code==='not-found')) ? 'nodb' : 'other'; S.phase='ready'; renderView(); };
+  UNSUB.push(F.onSnapshot(F.query(col('folders'), F.orderBy('createdAt','asc')), s=>{ S.folders=s.docs.map(d=>Object.assign({id:d.id}, d.data())); gotF=true; done(); }, onErr));
+  UNSUB.push(F.onSnapshot(F.query(col('captures'), F.orderBy('createdAt','desc')), s=>{ S.caps=s.docs.map(d=>Object.assign({id:d.id}, d.data())); gotC=true; done(); }, onErr));
+  F.getDoc(ref('meta','settings')).then(s=>{ const d=s.exists()?s.data():{}; if(d.geminiKey && !LS.get('cc_gemini_key')) LS.set('cc_gemini_key', d.geminiKey); if(d.model && !LS.get('cc_gemini_model')) LS.set('cc_gemini_model', d.model); renderView(); }).catch(()=>{});
+}
+async function loadFull(id){
+  if(FULL[id]!==undefined) return; FULL[id]=null;
+  try{ const s=await FB.F.getDoc(ref('images',id)); FULL[id]= s.exists() ? `data:${s.data().mime||'image/jpeg'};base64,${s.data().data}` : ''; }catch(e){ FULL[id]=''; }
+  if(S.view==='detail') renderView();
+}
+const newId = () => (crypto.randomUUID ? crypto.randomUUID().replace(/-/g,'') : Date.now().toString(36)+Math.random().toString(36).slice(2));
+function addFolder(name, ai){
+  const same=S.folders.find(f=>f.name===name); if(same) return same.id;
+  const id=newId(), t=Date.now(); const f={name, ai:!!ai, createdAt:t, updatedAt:t};
+  S.folders.push(Object.assign({id}, f)); write(FB.F.setDoc(ref('folders',id), f)).catch(()=>{});
+  return id;
+}
+
+/* ---------- images ---------- */
+const blobToB64 = b => new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(String(fr.result).split(',')[1]); fr.onerror=()=>rej(fr.error); fr.readAsDataURL(b); });
+async function compressImage(blob, maxW, maxPixels, maxB64){
+  const bmp=await createImageBitmap(blob);
+  let q=0.86, scale=Math.min(1, maxW/bmp.width, Math.sqrt(maxPixels/(bmp.width*bmp.height))), out='';
+  for(let i=0;i<8;i++){
+    const w=Math.max(1,Math.round(bmp.width*scale)), h=Math.max(1,Math.round(bmp.height*scale));
+    const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,w,h); g.drawImage(bmp,0,0,w,h);
+    out=await blobToB64(await new Promise(r=>c.toBlob(r,'image/jpeg',q)));
+    if(out.length<=maxB64) return out;
+    if(q>0.62) q-=0.12; else scale*=0.82;
+  }
+  return out;
+}
+const fullImage = blob => compressImage(blob, 1280, 2600000, 880000);
+const thumbImage = blob => compressImage(blob, 200, 90000, 40000);
 
 /* ---------- Gemini API ---------- */
 const MODELS = [['gemini-3.8-flash','Gemini 3.8 Flash · 글자를 더 정확히 읽어요'],['gemini-3.5-flash-lite','Gemini 3.5 Flash-Lite · 더 빨라요']];
 const AI = { key:()=>LS.get('cc_gemini_key')||'', model:()=>LS.get('cc_gemini_model')||MODELS[0][0] };
 const hasAI = () => !!AI.key();
-async function toBase64Jpeg(file){
-  const bmp=await createImageBitmap(file); const max=1600; const sc=Math.min(1, max/Math.max(bmp.width,bmp.height));
-  const w=Math.max(1,Math.round(bmp.width*sc)), h=Math.max(1,Math.round(bmp.height*sc));
-  const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,w,h); g.drawImage(bmp,0,0,w,h);
-  const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',0.9));
-  return await new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(String(fr.result).split(',')[1]); fr.onerror=()=>rej(fr.error); fr.readAsDataURL(blob); });
-}
-async function askGemini(text, file, signal){
+async function askGemini(text, imgB64, signal){
   const key=AI.key(); if(!key) throw {code:'no_key'};
-  const parts=[]; if(file) parts.push({inlineData:{mimeType:'image/jpeg', data:await toBase64Jpeg(file)}}); parts.push({text});
+  const parts=[]; if(imgB64) parts.push({inlineData:{mimeType:'image/jpeg', data:imgB64}}); parts.push({text});
   let r;
   try{
     r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(AI.model())}:generateContent`,{ method:'POST', signal,
@@ -312,120 +407,6 @@ function errBase(code){
   }
 }
 
-/* ---------- Google login + Drive sync ---------- */
-const DRIVE='https://www.googleapis.com/drive/v3', UPLOAD='https://www.googleapis.com/upload/drive/v3';
-const SCOPES='openid email https://www.googleapis.com/auth/drive.file';
-const G = { token:'', exp:0, email:LS.get('cc_gemail')||'', busy:false, progress:'', err:'', syncTimer:null,
-  valid(){ return !!this.token && Date.now() < this.exp - 60000; } };
-(function loadToken(){ try{ const t=JSON.parse(LS.get('cc_gtok')||'null'); if(t && t.exp>Date.now()){ G.token=t.t; G.exp=t.exp; } }catch(e){} })();
-const clientId = () => (GOOGLE_CLIENT_ID || LS.get('cc_gid') || '').trim();
-const isDirty = () => !!LS.get('cc_dirty');
-function markDirty(){ if(SUPPRESS) return; LS.set('cc_dirty', String(Date.now())); scheduleSync(); }
-function scheduleSync(){ if(!G.email) return; clearTimeout(G.syncTimer); G.syncTimer=setTimeout(()=>{ if(G.busy) return scheduleSync(); if(G.valid()) syncDrive(true); else renderView(); }, 4000); }
-function gLogin(after){
-  if(!clientId()){ toast('먼저 설정에 구글 클라이언트 ID를 넣어주세요'); return; }
-  if(!(window.google && google.accounts && google.accounts.oauth2)){ toast('구글 로그인을 불러오는 중이에요. 잠시 후 다시 눌러주세요.'); return; }
-  const client=google.accounts.oauth2.initTokenClient({ client_id:clientId(), scope:SCOPES,
-    callback: async resp=>{
-      if(!resp || resp.error){ toast('로그인하지 못했어요'); return; }
-      if(!google.accounts.oauth2.hasGrantedAllScopes(resp,'https://www.googleapis.com/auth/drive.file')){ G.err='드라이브 권한에 체크해야 백업할 수 있어요. 다시 로그인해서 드라이브 항목을 허용해 주세요.'; renderView(); return; }
-      G.token=resp.access_token; G.exp=Date.now()+(Number(resp.expires_in)||3600)*1000; G.err='';
-      LS.set('cc_gtok', JSON.stringify({t:G.token, exp:G.exp}));
-      try{ const u=await (await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+G.token}})).json(); if(u && u.email){ G.email=u.email; LS.set('cc_gemail', u.email); } }catch(e){}
-      if(!G.email){ G.email='구글 계정'; LS.set('cc_gemail', G.email); }
-      renderView(); if(after) after();
-    },
-    error_callback: err=>{ toast(err && err.type==='popup_closed' ? '로그인 창이 닫혔어요' : '로그인 창을 열지 못했어요. 팝업 차단을 꺼주세요.'); }
-  });
-  client.requestAccessToken(G.email && G.email.includes('@') ? {prompt:'', hint:G.email} : {prompt:'consent'});
-}
-function gLogout(){
-  try{ if(G.token && window.google) google.accounts.oauth2.revoke(G.token, ()=>{}); }catch(e){}
-  G.token=''; G.exp=0; G.email=''; G.err=''; ['cc_gtok','cc_gemail','cc_gfolder'].forEach(k=>LS.del(k));
-  S.confirmLogout=false; renderView(); toast('로그아웃했어요. 이 기기의 캡처는 그대로 있어요.');
-}
-async function gfetch(url, opts={}){
-  const headers=Object.assign({}, opts.headers||{}, {Authorization:'Bearer '+G.token});
-  let r; try{ r=await fetch(url, Object.assign({}, opts, {headers})); }catch(e){ throw {code:'network'}; }
-  if(r.status===401){ G.token=''; G.exp=0; LS.del('cc_gtok'); throw {code:'auth'}; }
-  if(!r.ok){ let d=''; try{ d=(await r.json())?.error?.message||''; }catch(e){} throw {code:'http', detail:`${r.status} ${d}`.trim()}; }
-  return r;
-}
-async function driveFolder(){
-  let id=LS.get('cc_gfolder');
-  if(id){ try{ const j=await (await gfetch(`${DRIVE}/files/${id}?fields=id,trashed`)).json(); if(!j.trashed) return id; }catch(e){ if(e.code==='auth'||e.code==='network') throw e; } }
-  const q=encodeURIComponent("mimeType='application/vnd.google-apps.folder' and appProperties has { key='cc' and value='root' } and trashed=false");
-  const j=await (await gfetch(`${DRIVE}/files?q=${q}&spaces=drive&fields=files(id)`)).json();
-  if(j.files && j.files.length) id=j.files[0].id;
-  else id=(await (await gfetch(`${DRIVE}/files?fields=id`,{method:'POST', headers:{'Content-Type':'application/json; charset=UTF-8'}, body:JSON.stringify({name:'캐치캐치 백업', mimeType:'application/vnd.google-apps.folder', appProperties:{cc:'root'}})})).json()).id;
-  LS.set('cc_gfolder', id); return id;
-}
-async function driveList(folderId){
-  const out=[]; let page='';
-  do{ const q=encodeURIComponent(`'${folderId}' in parents and trashed=false`);
-    const j=await (await gfetch(`${DRIVE}/files?q=${q}&spaces=drive&pageSize=1000&fields=nextPageToken,files(id,name,appProperties,modifiedTime)${page?'&pageToken='+encodeURIComponent(page):''}`)).json();
-    out.push(...(j.files||[])); page=j.nextPageToken||''; }while(page);
-  return out;
-}
-async function driveUpload(meta, blob, fileId){
-  const m=Object.assign({}, meta); if(fileId) delete m.parents;
-  const type=blob.type||'application/octet-stream';
-  const r1=await gfetch(`${UPLOAD}/files${fileId?'/'+fileId:''}?uploadType=resumable&fields=id`,{ method:fileId?'PATCH':'POST',
-    headers:{'Content-Type':'application/json; charset=UTF-8','X-Upload-Content-Type':type}, body:JSON.stringify(m) });
-  const loc=r1.headers.get('Location');
-  if(loc){ const r2=await fetch(loc,{method:'PUT', headers:{'Content-Type':type}, body:blob}); if(!r2.ok) throw {code:'http', detail:'upload '+r2.status}; return r2.json(); }
-  const b='cc'+Math.random().toString(36).slice(2);
-  const body=new Blob([`--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(m)}\r\n--${b}\r\nContent-Type: ${type}\r\n\r\n`, blob, `\r\n--${b}--`]);
-  return (await gfetch(`${UPLOAD}/files${fileId?'/'+fileId:''}?uploadType=multipart&fields=id`,{method:fileId?'PATCH':'POST', headers:{'Content-Type':`multipart/related; boundary=${b}`}, body})).json();
-}
-const extOf = t => ({'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/gif':'gif'})[t]||'bin';
-async function syncDrive(silent){
-  if(G.busy) return; if(!G.valid()){ gLogin(()=>syncDrive(silent)); return; }
-  const started=Date.now(); G.busy=true; G.err=''; G.progress='드라이브 확인 중'; renderView();
-  SUPPRESS=true;
-  try{
-    const folderId=await driveFolder();
-    const files=await driveList(folderId);
-    let indexFile=null; const byAsset={};
-    for(const f of files){ const p=f.appProperties||{}; if(p.cc==='index'){ if(!indexFile || f.modifiedTime>indexFile.modifiedTime) indexFile=f; } else if(p.ccAsset) byAsset[p.ccAsset]=f; }
-    let remote={folders:[],captures:[],deleted:[]};
-    if(indexFile){ try{ remote=await (await gfetch(`${DRIVE}/files/${indexFile.id}?alt=media`)).json(); }catch(e){ if(e.code==='auth') throw e; } }
-    const tomb=new Set([...getTomb(), ...((remote&&remote.deleted)||[])]);
-    const stamp=x=>x.updatedAt||x.createdAt||0;
-    for(const [store, local, rem] of [['folders',S.folders,remote.folders],['captures',S.caps,remote.captures]]){
-      const lm=new Map(local.map(x=>[x.id,x]));
-      for(const r of (rem||[])){ if(!r || !r.id || tomb.has(r.id)) continue; const l=lm.get(r.id); if(!l || stamp(r)>stamp(l)) await dbPut(store, r); }
-      for(const l of local) if(tomb.has(l.id)) await dbDel(store, l.id);
-    }
-    setTomb([...tomb]);
-    const [fs, cs]=await Promise.all([dbAll('folders'),dbAll('captures')]);
-    const needed=[...new Set(cs.map(x=>x.assetId).filter(Boolean))];
-    let n=0;
-    for(const a of needed){ if(await dbGet('images',a)) continue; const rf=byAsset[a]; if(!rf) continue;
-      G.progress=`이미지 받는 중 ${++n}`; renderView();
-      const b=await (await gfetch(`${DRIVE}/files/${rf.id}?alt=media`)).blob(); await dbPut('images', b, a); }
-    n=0;
-    for(const a of needed){ if(byAsset[a]) continue; const b=await dbGet('images',a); if(!b) continue;
-      G.progress=`이미지 올리는 중 ${++n}`; renderView();
-      const res=await driveUpload({name:`${a}.${extOf(b.type)}`, parents:[folderId], appProperties:{ccAsset:a}}, b); byAsset[a]={id:res.id}; }
-    G.progress='목록 저장 중'; renderView();
-    const body=JSON.stringify({app:'catchcatch', version:2, savedAt:new Date().toISOString(), folders:fs, captures:cs, deleted:[...tomb].slice(-5000)});
-    await driveUpload({name:'catchcatch-data.json', parents:[folderId], mimeType:'application/json', appProperties:{cc:'index'}}, new Blob([body],{type:'application/json'}), indexFile && indexFile.id);
-    const keep=new Set(needed);
-    for(const [a,rf] of Object.entries(byAsset)) if(!keep.has(a) && rf.id){ try{ await gfetch(`${DRIVE}/files/${rf.id}`,{method:'DELETE'}); }catch(e){} }
-    LS.set('cc_last_sync', String(Date.now()));
-    if(Number(LS.get('cc_dirty')||0) <= started) LS.del('cc_dirty');
-    if(!silent) toast('구글 드라이브와 맞췄어요');
-  }catch(e){
-    const c=e && e.code;
-    G.err = c==='auth' ? '구글 로그인이 만료됐어요. 다시 로그인하면 이어서 백업해요.' : c==='network' ? '인터넷 연결을 확인하고 다시 시도해 주세요.' : `드라이브 백업에 실패했어요.${e&&e.detail?'\n오류 내용: '+e.detail:''}`;
-    if(!silent) toast(c==='auth' ? '다시 로그인해 주세요' : '백업하지 못했어요');
-  }finally{
-    SUPPRESS=false; G.busy=false; G.progress=''; await reload();
-    if(isDirty() && G.valid()) scheduleSync();
-  }
-}
-
 /* ---------- helpers ---------- */
 const now = () => Date.now();
 function relTime(t){ if(!t) return ''; const d=now()-t, m=Math.floor(d/60000);
@@ -438,7 +419,7 @@ const folderOf = id => S.folders.find(f=>f.id===id);
 const folderName = id => folderOf(id)?.name || '미분류';
 const countIn = id => S.caps.filter(c=> id==='_none' ? !folderOf(c.folderId) : c.folderId===id).length;
 const capOf = id => S.caps.find(c=>c.id===id);
-const imgUrl = id => URLS[id] || '';
+const thumbUrl = c => c.thumb ? 'data:image/jpeg;base64,'+c.thumb : '';
 function safeLink(u){ try{ const x=new URL(String(u).trim()); return (x.protocol==='https:'||x.protocol==='http:') ? x.href : ''; }catch(e){ return ''; } }
 function guessSource(u){ const h=(()=>{ try{ return new URL(u).hostname; }catch(e){ return ''; } })();
   if(/(^|\.)(x|twitter)\.com$/.test(h)) return 'X'; if(/instagram/.test(h)) return '인스타그램'; if(/threads/.test(h)) return '스레드';
@@ -447,7 +428,7 @@ function hl(text, q){ text=String(text||''); if(!q) return esc(text); const lo=t
   while((j=lo.indexOf(ql,i))!==-1){ out+=esc(text.slice(i,j))+'<mark>'+esc(text.slice(j,j+q.length))+'</mark>'; i=j+q.length; } return out+esc(text.slice(i)); }
 function snippet(text, q){ text=String(text||'').replace(/\s+/g,' '); const j=text.toLowerCase().indexOf(q.toLowerCase()); if(j<0) return '';
   const a=Math.max(0,j-28), b=Math.min(text.length,j+q.length+48); return (a>0?'…':'')+hl(text.slice(a,b),q)+(b<text.length?'…':''); }
-let toastT; function toast(msg){ const t=$('#toast'); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true, 2600); }
+let toastT; function toast(msg){ const t=$('#toast'); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true, 2800); }
 function setPath(obj, path, val){ const k=path.split('.'); let o=obj; for(let i=0;i<k.length-1;i++){ o=o[k[i]]; if(!o) return; } o[k[k.length-1]]=val; }
 function paint(el, html){ const ae=document.activeElement; let id=null,a=null,b=null;
   if(ae && el.contains(ae) && ae.id){ id=ae.id; try{ a=ae.selectionStart; b=ae.selectionEnd; }catch(e){} }
@@ -459,17 +440,52 @@ function download(name, data, type){
   setTimeout(()=>URL.revokeObjectURL(u), 5000);
 }
 const fname = s => (String(s||'캐치캐치').replace(/[\\/:*?"<>|\r\n]+/g,' ').trim().slice(0,60) || '캐치캐치');
-const blobToDataURL = b => new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=()=>rej(fr.error); fr.readAsDataURL(b); });
+async function copyText(t){ try{ await navigator.clipboard.writeText(t); toast('복사했어요'); }catch(e){ toast('길게 눌러 직접 복사해 주세요'); } }
 
 /* ---------- navigation ---------- */
-function go(view, extra){ S.stack.push({view:S.view, folderId:S.folderId, capId:S.capId}); Object.assign(S, {view, edit:null, confirmDel:false, rename:null, confirmFolderDel:false, confirmWipe:false, confirmLogout:false}, extra||{}); if(view==='detail') S.tab='summary'; renderView(); window.scrollTo(0,0); }
+function go(view, extra){ S.stack.push({view:S.view, folderId:S.folderId, capId:S.capId}); Object.assign(S, {view, edit:null, confirmDel:false, rename:null, confirmFolderDel:false, confirmLogout:false}, extra||{}); if(view==='detail') S.tab='summary'; renderView(); window.scrollTo(0,0); }
 function back(){ const p=S.stack.pop() || {view:'home'}; Object.assign(S, p, {edit:null, confirmDel:false, rename:null, confirmFolderDel:false}); renderView(); window.scrollTo(0,0); }
 function home(){ S.stack=[]; S.view='home'; renderView(); window.scrollTo(0,0); }
 
-/* ---------- views ---------- */
+/* ---------- gate screens ---------- */
+function viewSetup(){
+  return `<div class="top"><div class="logo">${LOGO()}<span>캐치캐치</span></div></div>
+  <div><div class="eyebrow">처음 한 번만</div><h1 class="headline">구글 로그인 연결하기</h1></div>
+  <div class="card">
+    <h2>Firebase에서 할 일</h2>
+    <ol class="steps">
+      <li><b>프로젝트 설정 → 내 앱</b>에서 웹 앱(&lt;/&gt;)을 추가하고, 나오는 <b>firebaseConfig</b> 코드를 복사해요.</li>
+      <li><b>Authentication → 로그인 방법</b>에서 <b>Google</b>을 사용 설정해요.</li>
+      <li><b>Authentication → 설정 → 승인된 도메인</b>에 <b>${esc(location.hostname)}</b> 을 추가해요.</li>
+      <li><b>Firestore Database → 데이터베이스 만들기</b>를 누르고, <b>규칙</b> 탭에 아래 규칙을 붙여넣어 <b>게시</b>해요.</li>
+    </ol>
+    <pre class="code">${esc(RULES)}</pre>
+    <button class="btn sm outline" data-act="copy-rules" style="align-self:flex-start">${ic(I.copy,18)}규칙 복사</button>
+  </div>
+  <form class="card" data-form="cfg">
+    <h2>firebaseConfig 붙여넣기</h2>
+    <div class="field"><label for="cfg">복사한 코드 전체를 그대로 붙여넣어도 돼요</label><textarea id="cfg" class="inp" rows="8" data-bind="cfgDraft" autocapitalize="off" spellcheck="false" placeholder='const firebaseConfig = {&#10;  apiKey: "AIza...",&#10;  authDomain: "....firebaseapp.com",&#10;  ...&#10;};'>${esc(S.cfgDraft)}</textarea></div>
+    ${S.loginErr?`<p class="note err">${esc(S.loginErr)}</p>`:''}
+    <button class="btn">연결하기</button>
+    <p>이 값은 이 기기에만 저장돼요. index.html의 FIREBASE_CONFIG에 넣어두면 다른 기기에서는 이 화면 없이 바로 로그인할 수 있어요.</p>
+  </form>`;
+}
+function viewLogin(){
+  return `<div class="hero">${LOGO(72,66)}
+    <div class="eyebrow">캐치캐치</div>
+    <h1>좋은 정보는 캡처하고,<br>정리는 맡기세요</h1>
+    <p>캡처를 올리면 AI가 글자를 읽고 요약해서 폴더에 넣어줘요. 구글로 로그인하면 iPad와 휴대폰 어디서든 같은 보관함을 볼 수 있어요.</p>
+    ${S.loginErr?`<p class="note err">${esc(S.loginErr)}</p>`:''}
+    <button class="btn wide" data-act="login" ${S.busy==='login'?'disabled':''}>${S.busy==='login'?'로그인 창을 여는 중…':'Google 계정으로 시작하기'}</button>
+    ${(FIREBASE_CONFIG&&FIREBASE_CONFIG.apiKey)?'':`<button class="textbtn" data-act="reset-cfg">Firebase 설정 다시 하기</button>`}
+  </div>`;
+}
+function viewWait(msg){ return `<div class="hero" style="align-items:center;text-align:center;padding-top:20vh">${SPIN(56)}<p>${esc(msg)}</p></div>`; }
+
+/* ---------- app views ---------- */
 function rowHTML(c, q){
-  const u = c.assetId ? imgUrl(c.assetId) : '';
-  const th = u ? `<img src="${esc(u)}" alt="" loading="lazy">` : c.assetId ? ic(I.image,24) : ic(I.link,24);
+  const u=thumbUrl(c);
+  const th = u ? `<img src="${u}" alt="" loading="lazy">` : c.assetId ? ic(I.image,24) : ic(I.link,24);
   const sub = q ? (snippet((c.summary||[]).join(' '),q) || snippet(c.text,q) || esc((c.summary||[])[0]||'')) : esc((c.summary||[])[0] || (c.text||'').slice(0,80));
   const meta=[c.source, folderName(c.folderId), relTime(c.createdAt)].filter(Boolean).join(' · ');
   return `<button class="row" data-act="open" data-id="${esc(c.id)}"><span class="thumb">${th}</span><span class="rbody"><span class="rt">${q?hl(c.title||'제목 없음',q):esc(c.title||'제목 없음')}</span><span class="rs">${sub}</span><span class="rm">${esc(meta)}</span></span></button>`;
@@ -486,29 +502,25 @@ function folderCards(){
   } else h+=`<button class="fcard add" data-act="newfolder">${ic(I.plus,18)}새 폴더</button>`;
   return h;
 }
-function syncPill(){
-  if(!G.email) return '';
-  if(G.busy) return `<div class="pill" role="status">${SPIN(20)}<span>${esc(G.progress||'구글 드라이브와 맞추는 중')}</span></div>`;
-  if(isDirty() && !G.valid()) return `<button class="pill" data-act="sync-now"><span class="pdot"></span><span>드라이브에 백업 안 된 변경이 있어요 · 눌러서 백업</span></button>`;
+function dataErrHTML(){
+  if(S.dataErr==='perm') return `<div class="card"><h2>저장소에 접근할 수 없어요</h2><p>Firestore 보안 규칙이 아직 설정되지 않았어요. Firebase 콘솔 → Firestore Database → 규칙 탭에 아래 규칙을 붙여넣고 게시한 뒤 새로고침해 주세요.</p><pre class="code">${esc(RULES)}</pre><button class="btn sm outline" data-act="copy-rules" style="align-self:flex-start">${ic(I.copy,18)}규칙 복사</button></div>`;
+  if(S.dataErr==='nodb') return `<div class="card"><h2>저장소가 아직 없어요</h2><p>Firebase 콘솔 → Firestore Database에서 ‘데이터베이스 만들기’를 누른 뒤 새로고침해 주세요.</p></div>`;
+  if(S.dataErr) return `<p class="note err">보관함을 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요.</p>`;
   return '';
 }
 function viewHome(){
   const n=S.caps.length, today=S.caps.filter(c=>isToday(c.createdAt)).length;
   const date=new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'long'});
   let head;
-  if(S.status==='loading') head='보관함을 여는 중이에요';
-  else if(!n) head='캡처를 올리면<br>AI가 읽고 정리해둘게요';
+  if(!n) head='캡처를 올리면<br>AI가 읽고 정리해둘게요';
   else if(today) head=`오늘 모은 캡처 <b>${today}개</b>,<br>모두 ${n}개를 정리해뒀어요`;
   else head=`캡처 <b>${n}개</b>를<br>폴더 ${S.folders.length}개에 정리해뒀어요`;
-  const needsSetup = !hasAI() || (!G.email && !LS.get('cc_skip_google'));
-  let h=`<div class="top"><div class="logo">${LOGO()}<span>캐치캐치</span></div><button class="iconbtn" data-act="go-settings" aria-label="설정">${ic(I.gear,20)}${needsSetup?'<span class="ping"></span>':''}</button></div>
+  let h=`<div class="top"><div class="logo">${LOGO()}<span>캐치캐치</span></div><button class="iconbtn" data-act="go-settings" aria-label="설정">${ic(I.gear,20)}${hasAI()?'':'<span class="ping"></span>'}</button></div>
   <div><div class="eyebrow">${esc(date)}</div><h1 class="headline">${head}</h1></div>`;
-  if(S.status==='nostore') return h+`<div class="empty"><h3>이 브라우저에서는 저장할 수 없어요</h3><p>개인정보 보호 모드이거나 저장소가 꺼져 있으면 캡처를 보관할 수 없어요. 일반 창에서 다시 열어주세요.</p></div>`;
-  h+=syncPill();
+  h+=dataErrHTML();
   h+=`<button class="searchbar" data-act="go-search">${ic(I.search,20)}캡처 속 글자까지 검색</button>`;
-  if(S.status==='ready' && !n && !S.folders.length){
+  if(!n && !S.folders.length && !S.dataErr){
     h+=`<div class="empty">${LOGO(52,48)}<h3>첫 캡처를 올려보세요</h3><p>트위터나 인스타에서 찍어둔 화면을 올리면 AI가 이미지 속 글자를 읽고, 요약과 태그를 붙여 알맞은 폴더에 넣어줘요. 링크만 저장할 수도 있어요.</p><button class="btn pink" data-act="add">${ic(I.plus,20)}캡처 올리기</button>
-    ${!G.email?`<button class="textbtn" data-act="go-settings">${ic(I.cloud,16)}다른 기기에서 쓰던 캡처가 있다면 구글로 로그인</button>`:''}
     ${!hasAI()?`<button class="textbtn" data-act="go-settings">${ic(I.spark,16)}AI 정리를 쓰려면 무료 Gemini 키 넣기</button>`:''}</div>`;
   }
   h+=`<section class="section"><div class="sec-head"><h2>폴더</h2></div><div class="folders">${folderCards()}</div></section>`;
@@ -538,8 +550,11 @@ function viewDetail(){
   let h=`<div class="top"><button class="iconbtn bare" data-act="back" aria-label="뒤로">${ic(I.back)}</button>
     <button class="textbtn" data-act="folder" data-id="${esc(folderOf(c.folderId)?c.folderId:'_none')}">${esc(folderName(c.folderId))}</button>
     <button class="iconbtn bare" data-act="edit" aria-label="편집">${ic(I.edit)}</button></div>`;
-  const u=c.assetId?imgUrl(c.assetId):'';
-  if(u) h+=`<div class="shot"><img src="${esc(u)}" alt="${esc(c.title||'캡처')} 원본 이미지"></div>`;
+  if(c.assetId){
+    if(FULL[c.assetId]===undefined) setTimeout(()=>loadFull(c.assetId),0);
+    const u=FULL[c.assetId] || thumbUrl(c);
+    h+= u ? `<div class="shot"><img src="${u}" alt="${esc(c.title||'캡처')} 원본 이미지"></div>` : `<div class="shot">${SPIN(32)}</div>`;
+  }
   if(S.edit){
     const e=S.edit;
     return h+`<form class="section" data-form="edit">
@@ -567,7 +582,7 @@ function viewDetail(){
   h+=`<div class="mrow"><label for="move">폴더</label><select id="move" class="sel" data-change="move">${S.folders.map(f=>`<option value="${esc(f.id)}" ${f.id===c.folderId?'selected':''}>${esc(f.name)}</option>`).join('')}${folderOf(c.folderId)?'':'<option selected value="">미분류</option>'}</select></div>`;
   h+=`<div class="mrow"><span>저장한 날</span><span class="v">${fmtDate(c.createdAt)}</span></div></div>`;
   if(S.confirmDel){
-    h+=`<div class="confirm"><p>이 캡처를 삭제할까요? 이미지와 요약이 모두 지워지고, 구글 드라이브 백업에서도 빠져요.</p><div class="actions"><button class="btn sm outline" data-act="del-cancel">취소</button><button class="btn sm danger" data-act="del-yes">삭제</button></div></div>`;
+    h+=`<div class="confirm"><p>이 캡처를 삭제할까요? 이미지와 요약이 모두 지워지고, 다른 기기에서도 사라져요.</p><div class="actions"><button class="btn sm outline" data-act="del-cancel">취소</button><button class="btn sm danger" data-act="del-yes">삭제</button></div></div>`;
   } else {
     h+=`<div class="actions"><button class="btn" data-act="export">${ic(I.down,20)}요약 파일 저장</button>${c.assetId?`<button class="btn outline" data-act="save-img">${ic(I.image,20)}이미지 저장</button>`:''}</div>
     <button class="textbtn danger" data-act="del" style="align-self:flex-start">${ic(I.trash,16)}캡처 삭제</button>`;
@@ -607,63 +622,47 @@ function viewSearch(){
   h+= res.length ? `<div class="list">${res.map(c=>rowHTML(c,q)).join('')}</div>` : `<p class="hint">‘${esc(q)}’와 맞는 캡처가 없어요. 다른 단어로 찾아보거나 필터를 ‘전체’로 바꿔보세요.</p>`;
   return h+`</section>`;
 }
-function googleCard(){
-  let h=`<div class="card"><h2>구글 계정 · 드라이브 백업</h2>`;
-  if(!clientId()){
-    if(S.gidDraft===null) S.gidDraft='';
-    return h+`<p>구글로 로그인하면 캡처와 이미지를 내 구글 드라이브의 ‘캐치캐치 백업’ 폴더에 자동으로 저장해요. 다른 기기에서 로그인하면 그대로 불러와요.</p>
-      <p>처음 한 번, 구글 클라우드 콘솔에서 만든 <b>OAuth 클라이언트 ID</b>가 필요해요. 만드는 방법은 저장소의 README에 있어요.</p>
-      <form class="section" data-form="gid"><div class="field"><label for="s-gid">OAuth 클라이언트 ID</label><input id="s-gid" class="inp" autocomplete="off" autocapitalize="off" spellcheck="false" data-bind="gidDraft" value="${esc(S.gidDraft)}" placeholder="….apps.googleusercontent.com"></div><button class="btn sm">저장</button></form></div>`;
-  }
-  if(!G.email){
-    return h+`<p>로그인하면 캡처와 이미지를 내 구글 드라이브의 ‘캐치캐치 백업’ 폴더에 자동으로 저장해요. 다른 기기에서 로그인하면 그대로 불러와요.</p>
-      ${G.err?`<p class="note err">${esc(G.err)}</p>`:''}
-      <button class="btn" data-act="g-login">구글 계정으로 로그인</button>
-      <p>캐치캐치가 만든 파일에만 접근해요. 드라이브의 다른 파일은 볼 수 없어요.</p>
-      ${GOOGLE_CLIENT_ID?'':`<button class="textbtn" data-act="gid-clear" style="align-self:flex-start">클라이언트 ID 바꾸기</button>`}</div>`;
-  }
-  const last=Number(LS.get('cc_last_sync')||0);
-  const status = G.busy ? (G.progress||'맞추는 중') : isDirty() ? (G.valid()?'곧 자동으로 백업해요':'백업 안 된 변경이 있어요') : last ? `마지막 백업 ${relTime(last)} · ${fmtDate(last)}` : '아직 백업하지 않았어요';
-  h+=`<div class="acct"><span class="avatar">${esc((G.email[0]||'G').toUpperCase())}</span><span class="rbody"><span style="font-size:15px;font-weight:500">${esc(G.email)}</span><span class="hint">${esc(status)}</span></span></div>`;
-  if(G.err) h+=`<p class="note err">${esc(G.err)}</p>`;
-  h+=`<p>캡처를 저장하거나 고칠 때마다 드라이브의 ‘캐치캐치 백업’ 폴더에 자동으로 맞춰요. 로그인은 한 시간쯤 유지되고, 끊기면 홈에 백업 버튼이 떠요.</p>`;
-  h+=`<div class="actions"><button class="btn sm" data-act="sync-now" ${G.busy?'disabled':''}>${ic(I.sync,18)}지금 백업</button>${G.valid()?'':`<button class="btn sm outline" data-act="g-login">다시 로그인</button>`}</div>`;
-  h+= S.confirmLogout
-    ? `<div class="confirm" style="background:var(--bg)"><p>로그아웃할까요? 이 기기의 캡처와 드라이브 백업은 그대로 남아요.</p><div class="actions"><button class="btn sm outline" data-act="logout-cancel">취소</button><button class="btn sm danger" data-act="logout-yes">로그아웃</button></div></div>`
-    : `<button class="textbtn" data-act="logout" style="align-self:flex-start">로그아웃</button>`;
-  return h+`</div>`;
-}
 function viewSettings(){
   if(S.keyDraft===null) S.keyDraft=AI.key();
-  const m=AI.model();
+  const m=AI.model(), u=S.user;
   return `<div class="top"><button class="iconbtn bare" data-act="back" aria-label="뒤로">${ic(I.back)}</button></div>
   <div><div class="eyebrow">설정</div><h1 class="headline">캐치캐치 설정</h1></div>
-  ${googleCard()}
+  <div class="card">
+    <h2>내 계정</h2>
+    <div class="acct"><span class="avatar">${u.photo?`<img src="${esc(u.photo)}" alt="" referrerpolicy="no-referrer">`:esc((u.email[0]||'G').toUpperCase())}</span><span class="rbody"><span style="font-size:15px;font-weight:500">${esc(u.name||u.email)}</span><span class="hint">${esc(u.email)}</span></span></div>
+    <p>캡처는 이 구글 계정에 저장돼요. 다른 기기에서 같은 계정으로 로그인하면 그대로 보여요. 이미지는 저장할 때 용량을 줄여서 보관해요.</p>
+    ${S.confirmLogout
+      ? `<div class="confirm" style="background:var(--bg)"><p>로그아웃할까요? 캡처는 계정에 그대로 남아 있어요.</p><div class="actions"><button class="btn sm outline" data-act="logout-cancel">취소</button><button class="btn sm danger" data-act="logout-yes">로그아웃</button></div></div>`
+      : `<button class="btn sm outline" data-act="logout" style="align-self:flex-start">로그아웃</button>`}
+  </div>
   <form class="card" data-form="key">
     <h2>AI 정리 · Gemini</h2>
     <p>캡처를 읽고 요약하는 데 Gemini를 써요. <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>에서 구글 계정으로 무료 API 키를 받을 수 있어요.</p>
     <div class="field"><label for="s-key">Gemini API 키</label><input id="s-key" class="inp" type="password" autocomplete="off" data-bind="keyDraft" value="${esc(S.keyDraft)}" placeholder="AIza..."></div>
     <div class="field"><label for="s-model">모델</label><select id="s-model" class="inp" data-change="model">${MODELS.map(([v,l])=>`<option value="${v}" ${v===m?'selected':''}>${esc(l)}</option>`).join('')}</select></div>
-    <p>무료 키로 보낸 캡처는 구글이 서비스 개선에 쓸 수 있어요. 키는 이 기기의 브라우저에만 저장돼요.</p>
+    <p>키는 내 계정에 함께 저장돼서 다른 기기에서도 다시 넣지 않아도 돼요. 무료 키로 보낸 캡처는 구글이 서비스 개선에 쓸 수 있어요.</p>
     <div class="actions">${AI.key()?`<button type="button" class="btn sm outline" data-act="key-clear">키 지우기</button>`:''}<button class="btn sm">저장</button></div>
     ${AI.key()?`<button type="button" class="btn sm outline" data-act="key-test" ${S.test==='run'?'disabled':''}>${S.test==='run'?'확인하는 중…':'연결 테스트'}</button>`:''}
     ${S.test && S.test!=='run' ? `<p class="note ${S.test.ok?'ok':'err'}">${esc(S.test.msg)}</p>` : ''}
   </form>
   <div class="card">
-    <h2>파일로 백업</h2>
-    <p>구글 로그인 없이 백업 파일을 직접 저장하거나 불러올 수 있어요.</p>
+    <h2>파일로 내보내기</h2>
+    <p>모든 캡처를 파일 하나로 받아두거나, 예전 백업 파일을 불러올 수 있어요.</p>
     <p class="fcount">캡처 ${S.caps.length}개 · 폴더 ${S.folders.length}개</p>
-    <div class="actions"><button class="btn sm outline" data-act="backup">${ic(I.down,18)}백업 파일 저장</button><button class="btn sm outline" data-act="restore">${ic(I.up,18)}백업 불러오기</button></div>
-  </div>
-  <div class="card">
-    <h2>이 기기에서 지우기</h2>
-    ${S.confirmWipe?`<p>이 기기의 캡처와 폴더를 모두 지울까요? 구글 드라이브 백업은 남아 있어서, 다시 백업하면 돌아와요.</p><div class="actions"><button class="btn sm outline" data-act="wipe-cancel">취소</button><button class="btn sm danger" data-act="wipe-yes">모두 지우기</button></div>`
-      :`<p>이 기기에 저장된 캡처, 이미지, 폴더를 모두 지워요. 드라이브 백업은 지우지 않아요.</p><button class="textbtn danger" data-act="wipe" style="align-self:flex-start">${ic(I.trash,16)}이 기기에서 모두 지우기</button>`}
+    ${S.busy?`<p class="note">${esc(S.busy)}</p>`:''}
+    <div class="actions"><button class="btn sm outline" data-act="backup" ${S.busy?'disabled':''}>${ic(I.down,18)}백업 파일 저장</button><button class="btn sm outline" data-act="restore" ${S.busy?'disabled':''}>${ic(I.up,18)}백업 불러오기</button></div>
   </div>
   <p class="hint" style="text-align:center">캐치캐치 ${VERSION} · 캡처의 자음 ㅋㅊ에서, 좋은 정보를 캐치한다는 뜻</p>`;
 }
 function renderView(){
-  const html = S.view==='folder' ? viewFolder() : S.view==='detail' ? viewDetail() : S.view==='search' ? viewSearch() : S.view==='settings' ? viewSettings() : viewHome();
+  let html;
+  const gate = S.phase!=='ready';
+  document.body.classList.toggle('gate', gate);
+  if(S.phase==='setup') html=viewSetup();
+  else if(S.phase==='auth') html=viewWait('로그인 상태를 확인하고 있어요');
+  else if(S.phase==='login') html=viewLogin();
+  else if(S.phase==='loading') html=viewWait('보관함을 불러오고 있어요');
+  else html = S.view==='folder' ? viewFolder() : S.view==='detail' ? viewDetail() : S.view==='search' ? viewSearch() : S.view==='settings' ? viewSettings() : viewHome();
   paint($('#view'), html);
   const th=$('#tab-home'), ts=$('#tab-search');
   if(S.view==='home') th.setAttribute('aria-current','page'); else th.removeAttribute('aria-current');
@@ -672,18 +671,23 @@ function renderView(){
 
 /* ---------- add sheet ---------- */
 function openAdd(mode){
-  if(S.status!=='ready'){ toast(S.status==='loading'?'보관함을 여는 중이에요. 잠시 후 다시 눌러주세요.':'이 브라우저에서는 저장할 수 없어요.'); return false; }
+  if(S.phase!=='ready'){ return false; }
+  if(S.dataErr){ toast('저장소 설정을 먼저 마쳐주세요'); return false; }
   if(S.add && S.add.phase!=='saving') closeAdd();
-  S.add={mode:mode||'capture', file:null, preview:null, phase:'pick', note:null, err:null,
+  S.add={mode:mode||'capture', file:null, preview:null, img:null, phase:'pick', note:null, err:null,
     draft:{title:'',summary:'',tags:'',link:'',text:'',source:'',url:'',memo:''}, choice:null, aiFolderId:null, aiNew:'', newName:'', ctl:null};
   $('#sheet').hidden=false; document.body.style.overflow='hidden'; renderSheet(); return true;
 }
 function closeAdd(){ if(!S.add) return; S.add.ctl?.abort(); if(S.add.preview) URL.revokeObjectURL(S.add.preview); S.add=null; $('#sheet').hidden=true; document.body.style.overflow=''; }
-function setFile(file){
+async function setFile(file){
   const A=S.add; if(!A) return;
   if(!/^image\/(png|jpeg|webp|gif)$/.test(file.type)){ A.err='PNG, JPG, WEBP, GIF 이미지만 올릴 수 있어요.'; renderSheet(); return; }
   if(A.preview) URL.revokeObjectURL(A.preview);
-  A.mode='capture'; A.file=file; A.preview=URL.createObjectURL(file); A.err=null;
+  A.mode='capture'; A.file=file; A.preview=URL.createObjectURL(file); A.err=null; A.img=null;
+  A.phase='thinking'; renderSheet();
+  try{ A.img={full:await fullImage(file), thumb:await thumbImage(file)}; }
+  catch(e){ if(S.add!==A) return; A.phase='pick'; A.err='이미지를 읽지 못했어요. 다른 파일을 골라주세요.'; renderSheet(); return; }
+  if(S.add!==A) return;
   if(hasAI()) analyze(); else { A.note=errCopy('no_key'); toReview({}); }
 }
 function analyzePrompt(kind, extra){
@@ -708,7 +712,7 @@ async function analyze(){
   const isImg = A.mode==='capture';
   const prompt = isImg ? analyzePrompt('image') : analyzePrompt('link', `링크: ${A.draft.url}\n메모/본문:\n${A.draft.memo.slice(0,8000)}`);
   try{
-    const r=await askGemini(prompt, isImg ? A.file : null, A.ctl.signal);
+    const r=await askGemini(prompt, isImg && A.img ? A.img.full : null, A.ctl.signal);
     if(S.add!==A) return; toReview(r||{});
   }catch(e){
     if(S.add!==A) return;
@@ -753,7 +757,7 @@ function sheetHTML(){
     return h+`</div>`;
   }
   if(A.phase==='thinking'){
-    return h+`<div class="thinking">${A.preview?`<span class="thumb" style="width:76px;height:96px;border-radius:16px;flex:none"><img src="${A.preview}" alt=""></span>`:''}${SPIN(56)}<p><b style="color:var(--ink)">AI가 ${A.mode==='capture'?'캡처를 읽고':'내용을 정리하고'} 있어요</b><br>보통 5~20초 걸려요</p><button class="btn sm outline" data-act="stop">${ic(I.stop,18)}멈추기</button></div></div>`;
+    return h+`<div class="thinking">${A.preview?`<span class="thumb" style="width:76px;height:96px;border-radius:16px;flex:none"><img src="${A.preview}" alt=""></span>`:''}${SPIN(56)}<p><b style="color:var(--ink)">${!A.img&&A.mode==='capture'?'이미지를 준비하고 있어요':`AI가 ${A.mode==='capture'?'캡처를 읽고':'내용을 정리하고'} 있어요`}</b><br>보통 5~20초 걸려요</p>${A.ctl?`<button class="btn sm outline" data-act="stop">${ic(I.stop,18)}멈추기</button>`:''}</div></div>`;
   }
   if(A.phase==='saving') return h+`<div class="thinking">${SPIN(56)}<p>저장하는 중이에요</p></div></div>`;
   const d=A.draft;
@@ -789,23 +793,25 @@ function wireDrop(dz){
   dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
   dz.addEventListener('drop',e=>{ e.preventDefault(); dz.classList.remove('over'); const f=[...(e.dataTransfer?.files||[])].find(f=>f.type.startsWith('image/')); if(f) setFile(f); });
 }
-async function saveAdd(){
+function saveAdd(){
   const A=S.add; if(!A || !A.draft.title.trim()) return;
-  const d=A.draft; A.phase='saving'; renderSheet();
-  try{
-    let assetId=null;
-    if(A.mode==='capture' && A.file){ assetId=newId(); await dbPut('images', A.file, assetId); URLS[assetId]=URL.createObjectURL(A.file); }
-    let folderId=A.choice;
-    if(A.choice==='aiNew' || A.choice==='new'){ const name=(A.choice==='aiNew'?A.aiNew:A.newName).trim()||'새 폴더'; folderId=await addFolder(name, A.choice==='aiNew'); }
-    const t=now();
-    const doc={ id:newId(), type:A.mode, assetId, title:d.title.trim().slice(0,80),
-      summary:d.summary.split('\n').map(s=>s.replace(/^[-•·\s]+/,'').trim()).filter(Boolean).slice(0,8),
-      tags:d.tags.split(/[,，]/).map(x=>x.trim().replace(/^#/,'')).filter(Boolean).slice(0,10),
-      text:(d.text||'').slice(0,20000), link:d.link.trim(), source:d.source||guessSource(d.link), folderId, createdAt:t, updatedAt:t };
-    await dbPut('captures', doc);
-    closeAdd(); await reload(); toast('저장했어요');
-    S.stack=[{view:'home'}]; S.view='detail'; S.capId=doc.id; S.tab='summary'; S.edit=null; S.confirmDel=false; renderView(); window.scrollTo(0,0);
-  }catch(e){ if(!S.add) return; A.err=storeErr(e); A.phase='review'; renderSheet(); }
+  const d=A.draft;
+  let assetId=null;
+  if(A.mode==='capture' && A.img){
+    assetId=newId(); FULL[assetId]='data:image/jpeg;base64,'+A.img.full;
+    write(FB.F.setDoc(ref('images',assetId), {data:A.img.full, mime:'image/jpeg', createdAt:now()})).catch(()=>{});
+  }
+  let folderId=A.choice;
+  if(A.choice==='aiNew' || A.choice==='new'){ const name=(A.choice==='aiNew'?A.aiNew:A.newName).trim()||'새 폴더'; folderId=addFolder(name, A.choice==='aiNew'); }
+  const t=now(), id=newId();
+  const doc={ type:A.mode, assetId, thumb:(A.img&&A.img.thumb)||'', title:d.title.trim().slice(0,80),
+    summary:d.summary.split('\n').map(s=>s.replace(/^[-•·\s]+/,'').trim()).filter(Boolean).slice(0,8),
+    tags:d.tags.split(/[,，]/).map(x=>x.trim().replace(/^#/,'')).filter(Boolean).slice(0,10),
+    text:(d.text||'').slice(0,20000), link:d.link.trim(), source:d.source||guessSource(d.link), folderId, createdAt:t, updatedAt:t };
+  if(!capOf(id)) S.caps.unshift(Object.assign({id}, doc));
+  write(FB.F.setDoc(ref('captures',id), doc)).catch(()=>{});
+  closeAdd(); toast('저장했어요');
+  S.stack=[{view:'home'}]; S.view='detail'; S.capId=id; S.tab='summary'; S.edit=null; S.confirmDel=false; renderView(); window.scrollTo(0,0);
 }
 
 /* ---------- other actions ---------- */
@@ -837,45 +843,59 @@ async function askAI(){
   renderView();
 }
 async function backup(){
+  S.busy='백업 파일을 만드는 중이에요'; renderView();
   try{
     const images={};
-    for(const c of S.caps){ if(c.assetId && !images[c.assetId]){ const b=await dbGet('images',c.assetId); if(b) images[c.assetId]=await blobToDataURL(b); } }
-    const data={app:'catchcatch', version:2, exportedAt:new Date().toISOString(), folders:S.folders, captures:S.caps, images};
+    for(const c of S.caps){ if(c.assetId && !images[c.assetId]){
+      if(!FULL[c.assetId]){ try{ const s=await FB.F.getDoc(ref('images',c.assetId)); if(s.exists()) FULL[c.assetId]=`data:${s.data().mime||'image/jpeg'};base64,${s.data().data}`; }catch(e){} }
+      if(FULL[c.assetId]) images[c.assetId]=FULL[c.assetId]; } }
+    const data={app:'catchcatch', version:3, exportedAt:new Date().toISOString(), folders:S.folders, captures:S.caps, images};
     const d=new Date(); const p=n=>String(n).padStart(2,'0');
     download(`캐치캐치-백업-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}.json`, JSON.stringify(data), 'application/json');
     toast('백업 파일을 저장했어요');
   }catch(e){ toast('백업 파일을 만들지 못했어요.'); }
+  S.busy=''; renderView();
 }
 async function restore(file){
+  S.busy='백업 파일을 불러오는 중이에요'; renderView();
   try{
     const data=JSON.parse(await file.text());
-    if(!data || data.app!=='catchcatch' || !Array.isArray(data.captures)) throw 0;
-    for(const [id,url] of Object.entries(data.images||{})){ const b=await (await fetch(url)).blob(); await dbPut('images', b, id); }
-    for(const f of (data.folders||[])) if(f && f.id && f.name) await dbPut('folders', f);
-    for(const c of data.captures) if(c && c.id) await dbPut('captures', c);
-    await reload(); toast(`캡처 ${data.captures.length}개를 불러왔어요`);
-  }catch(e){ toast(e && e.name==='QuotaExceededError' ? '기기 저장 공간이 부족해요.' : '캐치캐치 백업 파일이 아니거나 읽을 수 없어요.'); }
-}
-async function wipe(){
-  for(const s of ['captures','folders','images']) await tx(s,'readwrite',st=>st.clear());
-  Object.values(URLS).forEach(u=>URL.revokeObjectURL(u)); for(const k in URLS) delete URLS[k];
-  LS.del('cc_dirty'); S.confirmWipe=false; await reload(); toast('이 기기에서 모두 지웠어요');
+    if(!data || data.app!=='catchcatch' || !Array.isArray(data.captures)) throw {msg:'캐치캐치 백업 파일이 아니에요.'};
+    const F=FB.F;
+    for(const f of (data.folders||[])) if(f && f.id && f.name){ const {id, ...rest}=f; await F.setDoc(ref('folders',id), Object.assign({ai:false, createdAt:now()}, rest)); }
+    let n=0;
+    for(const c of data.captures){ if(!c || !c.id) continue; const {id, ...rest}=c; const doc=Object.assign({}, rest);
+      if(c.assetId && data.images && data.images[c.assetId]){
+        S.busy=`불러오는 중 ${++n}/${data.captures.length}`; renderView();
+        const blob=await (await fetch(data.images[c.assetId])).blob();
+        const full=await fullImage(blob), thumb=await thumbImage(blob);
+        await F.setDoc(ref('images',c.assetId), {data:full, mime:'image/jpeg', createdAt:now()}); doc.thumb=thumb;
+      }
+      Object.keys(doc).forEach(k=>{ if(doc[k]===undefined) delete doc[k]; });
+      await F.setDoc(ref('captures',id), doc); }
+    toast(`캡처 ${data.captures.length}개를 불러왔어요`);
+  }catch(e){ toast(e && e.msg || fsErr(e)); }
+  S.busy=''; renderView();
 }
 
 /* ---------- events ---------- */
 document.addEventListener('click', async e=>{
   const el=e.target.closest('[data-act]'); if(!el) return;
   const act=el.dataset.act, id=el.dataset.id;
+  if(S.phase!=='ready' && !['login','reset-cfg','copy-rules'].includes(act)) return;
   switch(act){
+    case 'login': login(); break;
+    case 'reset-cfg': LS.del('cc_fbcfg'); location.reload(); break;
+    case 'copy-rules': copyText(RULES); break;
     case 'go-home': if(S.add) closeAdd(); home(); break;
     case 'go-search': if(S.add) closeAdd(); if(S.view!=='search') go('search'); setTimeout(()=>$('#q')?.focus(),0); break;
-    case 'go-settings': S.keyDraft=null; S.gidDraft=null; S.test=null; if(S.view!=='settings') go('settings'); break;
+    case 'go-settings': S.keyDraft=null; S.test=null; if(S.view!=='settings') go('settings'); break;
     case 'add': if(openAdd('capture')) $('#file').click(); break;
     case 'close-add': closeAdd(); break;
     case 'mode': S.add.mode=id; S.add.err=null; renderSheet(); break;
     case 'pick': $('#file').click(); break;
     case 'stop': S.add?.ctl?.abort(); break;
-    case 'reanalyze': if(S.add.mode==='capture' && !S.add.file) $('#file').click(); else analyze(); break;
+    case 'reanalyze': if(S.add.mode==='capture' && !S.add.img) $('#file').click(); else analyze(); break;
     case 'choose': S.add.choice=id; renderSheet(); if(id==='new') setTimeout(()=>$('#f-new')?.focus(),0); break;
     case 'back': back(); break;
     case 'open': go('detail',{capId:id}); break;
@@ -883,68 +903,63 @@ document.addEventListener('click', async e=>{
     case 'tag': S.q=id; S.filter='tag'; if(S.view!=='search') go('search'); else renderView(); break;
     case 'filter': S.filter=id; renderView(); break;
     case 'tab': S.tab=id; renderView(); break;
-    case 'newfolder': if(S.status!=='ready') break; S.newFolder=''; renderView(); setTimeout(()=>$('#nf-name')?.focus(),0); break;
+    case 'newfolder': S.newFolder=''; renderView(); setTimeout(()=>$('#nf-name')?.focus(),0); break;
     case 'newfolder-cancel': S.newFolder=null; renderView(); break;
     case 'rename': S.rename=folderOf(S.folderId)?.name||''; renderView(); setTimeout(()=>$('#rn-name')?.focus(),0); break;
     case 'rename-cancel': S.rename=null; renderView(); break;
     case 'folder-del': S.confirmFolderDel=true; renderView(); break;
     case 'folder-del-cancel': S.confirmFolderDel=false; renderView(); break;
-    case 'folder-del-yes': try{ addTomb(S.folderId); await dbDel('folders', S.folderId); await reload(); toast('폴더를 삭제했어요'); home(); }catch(err){ toast('삭제하지 못했어요.'); } break;
+    case 'folder-del-yes': write(FB.F.deleteDoc(ref('folders',S.folderId))).catch(()=>{}); toast('폴더를 삭제했어요'); home(); break;
     case 'edit': { const c=capOf(S.capId); if(!c) break; S.edit={title:c.title||'',summary:(c.summary||[]).join('\n'),tags:(c.tags||[]).join(', '),link:c.link||'',text:c.text||''}; renderView(); break; }
     case 'edit-cancel': S.edit=null; renderView(); break;
     case 'del': S.confirmDel=true; renderView(); break;
     case 'del-cancel': S.confirmDel=false; renderView(); break;
     case 'del-yes': { const c=capOf(S.capId); if(!c) break;
-      try{ addTomb(c.id); await dbDel('captures', c.id); if(c.assetId){ await dbDel('images', c.assetId); if(URLS[c.assetId]){ URL.revokeObjectURL(URLS[c.assetId]); delete URLS[c.assetId]; } }
-        await reload(); toast('삭제했어요'); back(); }catch(err){ toast('삭제하지 못했어요.'); } break; }
+      write(FB.F.deleteDoc(ref('captures',c.id))).catch(()=>{}); if(c.assetId){ write(FB.F.deleteDoc(ref('images',c.assetId))).catch(()=>{}); delete FULL[c.assetId]; }
+      toast('삭제했어요'); back(); break; }
     case 'export': { const c=capOf(S.capId); if(c) download(fname(c.title)+'.md', toMd(c)); break; }
     case 'export-folder': { const list=S.caps.filter(c=> S.folderId==='_none' ? !folderOf(c.folderId) : c.folderId===S.folderId);
       download(fname(S.folderId==='_none'?'미분류':folderName(S.folderId))+'.md', list.map(toMd).join('\n---\n\n')); break; }
-    case 'save-img': { const c=capOf(S.capId); if(!c||!c.assetId) break; const b=await dbGet('images',c.assetId); if(!b){ toast('이미지를 찾지 못했어요.'); break; }
-      download(fname(c.title)+'.'+(extOf(b.type)==='bin'?'png':extOf(b.type)), b); break; }
-    case 'copy-text': { const c=capOf(S.capId); if(!c) break;
-      try{ await navigator.clipboard.writeText(c.text||''); toast('원문을 복사했어요'); }
-      catch(err){ const p=document.querySelector('.raw'); if(p){ const r=document.createRange(); r.selectNodeContents(p); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast('선택된 글자를 복사하세요'); } } break; }
+    case 'save-img': { const c=capOf(S.capId); if(!c||!c.assetId) break; const u=FULL[c.assetId]; if(!u){ toast('이미지를 불러오는 중이에요. 잠시 후 다시 눌러주세요.'); break; }
+      download(fname(c.title)+'.jpg', await (await fetch(u)).blob()); break; }
+    case 'copy-text': { const c=capOf(S.capId); if(c) copyText(c.text||''); break; }
     case 'ask': askAI(); break;
     case 'ask-stop': S.ask?.ctl?.abort(); break;
-    case 'key-clear': LS.del('cc_gemini_key'); S.keyDraft=''; S.test=null; renderView(); toast('API 키를 지웠어요'); break;
+    case 'key-clear': LS.del('cc_gemini_key'); S.keyDraft=''; S.test=null; FB.F.setDoc(ref('meta','settings'), {geminiKey:''}, {merge:true}).catch(()=>{}); renderView(); toast('API 키를 지웠어요'); break;
     case 'key-test': S.test='run'; renderView();
       try{ await askGemini('연결 확인이야. {"ok":true} 만 그대로 답해.', null); S.test={ok:true, msg:`연결됐어요. ${AI.model()} 모델로 분석할 수 있어요.`}; }
       catch(err){ S.test={ok:false, msg:errCopy(err && err.code, err && err.detail)}; }
       renderView(); break;
-    case 'g-login': gLogin(()=>syncDrive(false)); break;
-    case 'sync-now': syncDrive(false); break;
     case 'logout': S.confirmLogout=true; renderView(); break;
     case 'logout-cancel': S.confirmLogout=false; renderView(); break;
-    case 'logout-yes': gLogout(); break;
-    case 'gid-clear': LS.del('cc_gid'); S.gidDraft=''; renderView(); break;
+    case 'logout-yes': logout(); break;
     case 'backup': backup(); break;
     case 'restore': $('#backup-file').click(); break;
-    case 'wipe': S.confirmWipe=true; renderView(); break;
-    case 'wipe-cancel': S.confirmWipe=false; renderView(); break;
-    case 'wipe-yes': wipe(); break;
   }
 });
 document.addEventListener('submit', async e=>{
   const f=e.target.closest('[data-form]'); if(!f) return; e.preventDefault();
   const k=f.dataset.form;
+  if(k==='cfg'){ const cfg=parseConfig(S.cfgDraft||''); if(!cfg){ S.loginErr='apiKey, authDomain, projectId, appId가 들어 있는 firebaseConfig 코드를 붙여넣어 주세요.'; renderView(); return; }
+    LS.set('cc_fbcfg', JSON.stringify(cfg)); S.loginErr=''; S.phase='auth'; renderView(); start(); return; }
+  if(S.phase!=='ready') return;
   if(k==='search'){ $('#q')?.blur(); return; }
-  if(k==='key'){ const v=(S.keyDraft||'').trim(); if(!v){ toast('Gemini API 키를 넣어주세요'); return; } LS.set('cc_gemini_key', v); S.test=null; renderView(); toast('저장했어요'); return; }
-  if(k==='gid'){ const v=(S.gidDraft||'').trim(); if(!/\.apps\.googleusercontent\.com$/.test(v)){ toast('…apps.googleusercontent.com으로 끝나는 ID를 넣어주세요'); return; } LS.set('cc_gid', v); renderView(); toast('저장했어요. 이제 로그인할 수 있어요'); return; }
+  if(k==='key'){ const v=(S.keyDraft||'').trim(); if(!v){ toast('Gemini API 키를 넣어주세요'); return; }
+    LS.set('cc_gemini_key', v); S.test=null; FB.F.setDoc(ref('meta','settings'), {geminiKey:v, model:AI.model()}, {merge:true}).catch(()=>{}); renderView(); toast('저장했어요'); return; }
   if(k==='link'){ const d=S.add.draft; if(!safeLink(d.url)){ S.add.err='https://로 시작하는 링크를 넣어주세요.'; renderSheet(); return; }
     S.add.err=null; if(hasAI()) analyze(); else { S.add.note=errCopy('no_key'); toReview({}); } return; }
   if(k==='save'){ saveAdd(); return; }
   if(k==='newfolder'){ const name=(S.newFolder||'').trim(); if(!name) return;
     if(S.folders.some(x=>x.name===name)){ toast('같은 이름의 폴더가 있어요'); return; }
-    try{ await addFolder(name,false); S.newFolder=null; await reload(); toast('폴더를 만들었어요'); }catch(err){ toast(storeErr(err)); } return; }
-  if(k==='rename'){ const name=(S.rename||'').trim(); const fo=folderOf(S.folderId); if(!name||!fo) return;
-    try{ await dbPut('folders', Object.assign({}, fo, {name, updatedAt:now()})); S.rename=null; await reload(); }catch(err){ toast('이름을 바꾸지 못했어요.'); } return; }
+    addFolder(name,false); S.newFolder=null; renderView(); toast('폴더를 만들었어요'); return; }
+  if(k==='rename'){ const name=(S.rename||'').trim(); if(!name || !folderOf(S.folderId)) return;
+    write(FB.F.updateDoc(ref('folders',S.folderId), {name, updatedAt:now()})).catch(()=>{}); S.rename=null; renderView(); return; }
   if(k==='edit'){ const e2=S.edit, c=capOf(S.capId); if(!c) return;
-    try{ await dbPut('captures', Object.assign({}, c, { title:e2.title.trim().slice(0,80)||'제목 없음',
+    write(FB.F.updateDoc(ref('captures',c.id), { title:e2.title.trim().slice(0,80)||'제목 없음',
         summary:e2.summary.split('\n').map(s=>s.replace(/^[-•·\s]+/,'').trim()).filter(Boolean).slice(0,8),
         tags:e2.tags.split(/[,，]/).map(t=>t.trim().replace(/^#/,'')).filter(Boolean).slice(0,10),
-        link:e2.link.trim(), text:e2.text.slice(0,20000), updatedAt:now() }));
-      S.edit=null; await reload(); toast('수정했어요'); }catch(err){ toast(storeErr(err)); } return; }
+        link:e2.link.trim(), text:e2.text.slice(0,20000), updatedAt:now() })).catch(()=>{});
+    S.edit=null; renderView(); toast('수정했어요'); return; }
 });
 document.addEventListener('input', e=>{
   const k=e.target.dataset && e.target.dataset.bind; if(!k) return;
@@ -952,30 +967,31 @@ document.addEventListener('input', e=>{
   if(k==='q') renderView();
   else if((k==='add.newName' || k==='add.draft.title') && S.add){ const b=$('#save-btn'), h=$('#save-hint'); if(b){ b.textContent=saveLabel(); b.disabled=!S.add.draft.title.trim(); } if(h) h.hidden=!!S.add.draft.title.trim(); }
 });
-document.addEventListener('change', async e=>{
-  const ch=e.target.dataset && e.target.dataset.change; if(!ch) return;
+document.addEventListener('change', e=>{
+  const ch=e.target.dataset && e.target.dataset.change; if(!ch || S.phase!=='ready') return;
   if(ch==='move'){ const c=capOf(S.capId), v=e.target.value; if(!c||!v) return;
-    try{ await dbPut('captures', Object.assign({}, c, {folderId:v, updatedAt:now()})); await reload(); toast(`‘${folderName(v)}’로 옮겼어요`); }catch(err){ toast('옮기지 못했어요.'); } }
-  if(ch==='model'){ LS.set('cc_gemini_model', e.target.value); S.test=null; toast('모델을 바꿨어요'); }
+    write(FB.F.updateDoc(ref('captures',c.id), {folderId:v, updatedAt:now()})).catch(()=>{}); toast(`‘${folderName(v)}’로 옮겼어요`); }
+  if(ch==='model'){ LS.set('cc_gemini_model', e.target.value); S.test=null; FB.F.setDoc(ref('meta','settings'), {model:e.target.value}, {merge:true}).catch(()=>{}); toast('모델을 바꿨어요'); }
 });
 $('#file').addEventListener('change', e=>{ const f=e.target.files && e.target.files[0]; e.target.value=''; if(!f) return; if(!S.add && !openAdd('capture')) return; setFile(f); });
 $('#backup-file').addEventListener('change', e=>{ const f=e.target.files && e.target.files[0]; e.target.value=''; if(f) restore(f); });
 document.addEventListener('paste', e=>{
+  if(S.phase!=='ready') return;
   const f=[...(e.clipboardData?.files||[])].find(x=>x.type.startsWith('image/')); if(!f) return;
   e.preventDefault(); if(!S.add && !openAdd('capture')) return; setFile(f);
 });
 document.addEventListener('keydown', e=>{ if(e.key==='Escape' && S.add && S.add.phase!=='saving') closeAdd(); });
 $('#sheet').addEventListener('click', e=>{ if(e.target.id==='sheet' && S.add && S.add.phase!=='saving') closeAdd(); });
-document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && G.email && isDirty() && G.valid()) scheduleSync(); });
 
 /* ---------- boot ---------- */
-(async function boot(){
-  renderView();
-  try{ IDB=await idbOpen(); }catch(e){ S.status='nostore'; renderView(); return; }
-  try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){}
-  try{ await reload(); }catch(e){ S.status='nostore'; renderView(); return; }
-  if(G.email && G.valid()) syncDrive(true);
-})();
+async function start(){
+  const cfg=getConfig();
+  if(!cfg){ S.phase='setup'; renderView(); return; }
+  S.phase='auth'; renderView();
+  try{ await initFirebase(cfg); }
+  catch(e){ S.phase=FIREBASE_CONFIG?'login':'setup'; S.loginErr='Firebase를 불러오지 못했어요. 인터넷 연결이나 설정값을 확인해 주세요.'; renderView(); }
+}
+start();
 })();
 </script>
 </body>
